@@ -179,13 +179,37 @@ console.log('Supabase REST client initialized for:', SUPABASE_URL);
 
 const EXAM_TYPES = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2'];
 const SECTIONS = ['A', 'B'];
-const CLASSES = [3, 4, 5, 6, 7, 8, 9, 10];
+const CLASSES = [
+    '3', '4', '5', '6', '7', '8', '9', '10',
+    'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T',
+    'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter A&T'
+];
 const MAX_STUDENTS = 40;
 
-function getSubjects(classNumber) {
-    if (classNumber >= 3 && classNumber <= 5) {
-        return ['Telugu', 'English', 'Maths', 'EVS'];
+function getSubjects(classVal) {
+    const num = parseInt(classVal);
+    if (!isNaN(num)) {
+        if (num >= 3 && num <= 5) {
+            return ['Telugu', 'English', 'Maths', 'EVS'];
+        }
+        return ['Telugu', 'Hindi', 'English', 'Maths', 'Science', 'Social'];
     }
+    
+    const val = String(classVal).toUpperCase();
+    if (val.includes('MPC')) {
+        return ['English', 'Second Language', 'Maths-A', 'Maths-B', 'Physics', 'Chemistry'];
+    } else if (val.includes('BIPC')) {
+        return ['English', 'Second Language', 'Botany', 'Zoology', 'Physics', 'Chemistry'];
+    } else if (val.includes('CEC')) {
+        return ['English', 'Second Language', 'Commerce', 'Economics', 'Civics'];
+    } else if (val.includes('HEC')) {
+        return ['English', 'Second Language', 'History', 'Economics', 'Civics'];
+    } else if (val.includes('MEC')) {
+        return ['English', 'Second Language', 'Maths', 'Economics', 'Commerce'];
+    } else if (val.includes('A&T')) {
+        return ['English', 'Second Language', 'Agriculture', 'Technology', 'Vocational-Practical'];
+    }
+    
     return ['Telugu', 'Hindi', 'English', 'Maths', 'Science', 'Social'];
 }
 
@@ -289,7 +313,11 @@ function hideLoading() {
 // ============================================
 // Utility: Class display name
 // ============================================
-function classDisplayName(num) {
-    const suffixes = { 1: 'st', 2: 'nd', 3: 'rd' };
-    return num + (suffixes[num] || 'th') + ' Class';
+function classDisplayName(val) {
+    const num = parseInt(val);
+    if (!isNaN(num)) {
+        const suffixes = { 1: 'st', 2: 'nd', 3: 'rd' };
+        return val + (suffixes[num] || 'th') + ' Class';
+    }
+    return val;
 }

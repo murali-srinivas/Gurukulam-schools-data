@@ -144,7 +144,7 @@ async function loadStudentTable() {
       .from('students')
       .select('*')
       .eq('school_id', currentSchool.id)
-      .eq('class_number', parseInt(classNum))
+      .eq('class_number', classNum)
       .eq('section', section)
       .order('roll_number', { ascending: true });
       
@@ -202,7 +202,7 @@ async function saveStudents() {
     if (name) {
       const data = {
         school_id: currentSchool.id,
-        class_number: parseInt(classNum),
+        class_number: classNum,
         section: section,
         roll_number: rollNo,
         student_name: name,
@@ -258,14 +258,14 @@ async function loadMarksTable() {
   
   showLoading();
   try {
-    const subjects = getSubjects(parseInt(classNum));
+    const subjects = getSubjects(classNum);
     const maxMarks = getMaxMarks(exam);
     
     const { data: students, error: stuError } = await supabase
       .from('students')
       .select('*')
       .eq('school_id', currentSchool.id)
-      .eq('class_number', parseInt(classNum))
+      .eq('class_number', classNum)
       .eq('section', section)
       .order('roll_number', { ascending: true });
       
@@ -391,7 +391,7 @@ function updateRowResult(row, subjectsStr, examType) {
 }
 
 async function saveMarks() {
-  const classNum = parseInt(document.getElementById('marks-class').value);
+  const classNum = document.getElementById('marks-class').value;
   const exam = document.getElementById('marks-exam').value;
   
   if (!exam) return;
@@ -475,7 +475,7 @@ async function fetchReportData() {
     .order('section', { ascending: true })
     .order('roll_number', { ascending: true });
     
-  if (rClass) stuQuery = stuQuery.eq('class_number', parseInt(rClass));
+  if (rClass) stuQuery = stuQuery.eq('class_number', rClass);
   if (rSection) stuQuery = stuQuery.eq('section', rSection);
   
   const { data: students, error: stuErr } = await stuQuery;

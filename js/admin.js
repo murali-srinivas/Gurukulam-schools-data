@@ -300,7 +300,7 @@ async function loadAdminStudents() {
         let query = supabase.from('students').select('*');
         
         if (schoolId) query = query.eq('school_id', schoolId);
-        if (classVal) query = query.eq('class_number', parseInt(classVal));
+        if (classVal) query = query.eq('class_number', classVal);
         if (sectionVal) query = query.eq('section', sectionVal);
         
         const { data, error } = await query.order('class_number').order('section').order('roll_number');
@@ -369,7 +369,7 @@ async function loadAdminMarks() {
     
     showLoading();
     try {
-        const classNum = parseInt(classVal);
+        const classNum = classVal;
         const { data: students, error: stuError } = await supabase
             .from('students')
             .select('*')
@@ -544,7 +544,7 @@ async function exportAdminExcel() {
     showLoading();
     try {
         let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId);
-        if (classVal) stuQuery = stuQuery.eq('class_number', parseInt(classVal));
+        if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
         if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
         const { data: students, error: stuError } = await stuQuery.order('class_number').order('section').order('roll_number');
         if (stuError) throw stuError;
@@ -636,7 +636,7 @@ async function exportAdminPDF() {
     
     showLoading();
     try {
-        let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId).eq('class_number', parseInt(classVal));
+        let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId).eq('class_number', classVal);
         if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
         
         const { data: students, error: stuError } = await stuQuery.order('section').order('roll_number');
@@ -660,7 +660,7 @@ async function exportAdminPDF() {
         const school = allSchools.find(s => s.id === schoolId);
         const schoolName = school ? school.school_name : 'Unknown';
         
-        const subjects = getSubjects(parseInt(classVal));
+        const subjects = getSubjects(classVal);
         
         const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Result']];
         const body = [];
@@ -696,7 +696,7 @@ async function exportAdminPDF() {
         doc.text('School Data Portal - Report', 14, 15);
         
         doc.setFontSize(10);
-        doc.text(`School: ${schoolName} | Class: ${classDisplayName(parseInt(classVal))} | Exam: ${examType}`, 14, 22);
+        doc.text(`School: ${schoolName} | Class: ${classDisplayName(classVal)} | Exam: ${examType}`, 14, 22);
         
         doc.autoTable({
             head: head,
