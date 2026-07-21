@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Dashboard - School Data Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<div class="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="sidebar-brand-text">
+          <h2 id="school-brand-name">School Portal</h2>
+          <span>School Panel</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <div class="nav-item active" onclick="switchTab('overview')" id="nav-overview">
+        <i class="fas fa-chart-pie"></i> Overview
+      </div>
+      <div class="nav-section-title">Data Entry</div>
+      <div class="nav-item" onclick="switchTab('students')" id="nav-students">
+        <i class="fas fa-users"></i> Students
+      </div>
+      <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
+        <i class="fas fa-edit"></i> Enter Marks
+      </div>
+      <div class="nav-section-title">Export</div>
+      <div class="nav-item" onclick="switchTab('reports')" id="nav-reports">
+        <i class="fas fa-download"></i> Reports
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-avatar-letter">S</div>
+        <div class="user-info">
+          <div class="user-name" id="school-user-name">School</div>
+          <div class="user-role">School Admin</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <header class="main-header">
+      <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1 class="page-title" id="page-title">Overview</h1>
+      <div class="header-actions">
+        <span class="text-muted" id="current-date"></span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- TAB: OVERVIEW -->
+      <div class="tab-pane active" id="tab-overview">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-layer-group text-primary"></i> Class-wise Student Count</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Class</th><th>Section A</th><th>Section B</th><th>Total</th></tr>
+              </thead>
+              <tbody id="overview-class-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STUDENTS -->
+      <div class="tab-pane" id="tab-students">
+        <h2 class="section-title"><i class="fas fa-users"></i> Student Data Entry</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="stu-class" onchange="loadStudentTable()"></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="stu-section" onchange="loadStudentTable()"><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary btn-sm" onclick="saveStudents()">
+                <i class="fas fa-save"></i> Save Students
+              </button>
+            </div>
+          </div>
+          <div class="table-container" id="students-table-container">
+            <table>
+              <thead>
+                <tr><th>Roll No</th><th>Student Name</th><th>Gender</th></tr>
+              </thead>
+              <tbody id="students-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: MARKS -->
+      <div class="tab-pane" id="tab-marks">
+        <h2 class="section-title"><i class="fas fa-edit"></i> Enter Exam Marks</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="marks-class" onchange="onMarksFilterChange()"></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="marks-section" onchange="onMarksFilterChange()"><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Exam</label>
+              <select id="marks-exam" onchange="onMarksFilterChange()"><option value="">Select Exam</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary btn-sm" onclick="loadMarksTable()">
+                <i class="fas fa-search"></i> Load
+              </button>
+              <button class="btn btn-success btn-sm" onclick="saveMarks()" id="save-marks-btn" disabled>
+                <i class="fas fa-save"></i> Save Marks
+              </button>
+            </div>
+          </div>
+          <div class="table-container" id="marks-table-container">
+            <div class="empty-state">
+              <i class="fas fa-edit"></i>
+              <h4>Select Class, Section & Exam</h4>
+              <p>Choose the filters above and click Load to enter marks</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: REPORTS -->
+      <div class="tab-pane" id="tab-reports">
+        <h2 class="section-title"><i class="fas fa-download"></i> Export Reports</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="report-class"><option value="">All Classes</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="report-section"><option value="">All</option><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Exam</label>
+              <select id="report-exam"><option value="">All Exams</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="btn-group">
+              <button class="btn btn-success" onclick="exportExcel()">
+                <i class="fas fa-file-excel"></i> Export to Excel
+              </button>
+              <button class="btn btn-danger" onclick="exportPDF()">
+                <i class="fas fa-file-pdf"></i> Export to PDF
+              </button>
+            </div>
+            <div id="report-preview" class="mt-6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/school.js"></script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - School Data Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<div class="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="sidebar-brand-text">
+          <h2>School Portal</h2>
+          <span>Admin Panel</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <div class="nav-item active" onclick="switchTab('overview')" id="nav-overview">
+        <i class="fas fa-chart-pie"></i> Overview
+      </div>
+      <div class="nav-item" onclick="switchTab('schools')" id="nav-schools">
+        <i class="fas fa-school"></i> Manage Schools
+      </div>
+      <div class="nav-section-title">Data</div>
+      <div class="nav-item" onclick="switchTab('students')" id="nav-students">
+        <i class="fas fa-users"></i> Students
+      </div>
+      <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
+        <i class="fas fa-file-alt"></i> Exam Marks
+      </div>
+      <div class="nav-section-title">Export</div>
+      <div class="nav-item" onclick="switchTab('reports')" id="nav-reports">
+        <i class="fas fa-download"></i> Reports
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="admin-name">Administrator</div>
+          <div class="user-role">Super Admin</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <header class="main-header">
+      <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1 class="page-title" id="page-title">Overview</h1>
+      <div class="header-actions">
+        <span class="text-muted" id="current-date"></span>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- TAB: OVERVIEW -->
+      <div class="tab-pane active" id="tab-overview">
+        <div class="stats-grid" id="stats-grid">
+          <!-- 4 stat cards: Total Schools, Total Students, Classes, Exams Available -->
+          <!-- These will be populated by JS -->
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-school text-primary"></i> Schools Overview</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>School Name</th><th>Username</th><th>Total Students</th><th>Status</th></tr>
+              </thead>
+              <tbody id="overview-schools-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: MANAGE SCHOOLS -->
+      <div class="tab-pane" id="tab-schools">
+        <div class="d-flex justify-between align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title"><i class="fas fa-school"></i> Manage Schools</h2>
+          <button class="btn btn-primary" onclick="openSchoolModal()">
+            <i class="fas fa-plus"></i> Add School
+          </button>
+        </div>
+        <div class="card">
+          <div class="table-container standalone">
+            <table>
+              <thead>
+                <tr><th>#</th><th>School Name</th><th>Username</th><th>Password</th><th>Created</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="schools-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STUDENTS -->
+      <div class="tab-pane" id="tab-students">
+        <h2 class="section-title"><i class="fas fa-users"></i> All Students</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>School</label>
+              <select id="stu-filter-school" onchange="loadAdminStudents()"><option value="">All Schools</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="stu-filter-class" onchange="loadAdminStudents()"><option value="">All Classes</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="stu-filter-section" onchange="loadAdminStudents()"><option value="">All</option><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-outline btn-sm" onclick="resetStudentFilters()"><i class="fas fa-undo"></i> Reset</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Roll No</th><th>Student Name</th><th>Gender</th><th>Class</th><th>Section</th><th>School</th></tr>
+              </thead>
+              <tbody id="admin-students-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: EXAM MARKS -->
+      <div class="tab-pane" id="tab-marks">
+        <h2 class="section-title"><i class="fas fa-file-alt"></i> Exam Marks</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>School</label>
+              <select id="marks-filter-school" onchange="onAdminMarksFilterChange()"><option value="">Select School</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="marks-filter-class" onchange="onAdminMarksFilterChange()"><option value="">Select Class</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="marks-filter-section" onchange="onAdminMarksFilterChange()"><option value="">Select</option><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Exam</label>
+              <select id="marks-filter-exam" onchange="onAdminMarksFilterChange()"><option value="">Select Exam</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary btn-sm" id="load-marks-btn" onclick="loadAdminMarks()"><i class="fas fa-search"></i> Load</button>
+            </div>
+          </div>
+          <div class="table-container" id="admin-marks-container">
+            <div class="empty-state">
+              <i class="fas fa-filter"></i>
+              <h4>Select Filters</h4>
+              <p>Choose school, class, section, and exam to view marks</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: REPORTS -->
+      <div class="tab-pane" id="tab-reports">
+        <h2 class="section-title"><i class="fas fa-download"></i> Reports & Export</h2>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>School</label>
+              <select id="report-filter-school"><option value="">All Schools</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Class</label>
+              <select id="report-filter-class"><option value="">All Classes</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Section</label>
+              <select id="report-filter-section"><option value="">All</option><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Exam</label>
+              <select id="report-filter-exam"><option value="">All Exams</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="btn-group">
+              <button class="btn btn-success" onclick="exportAdminExcel()">
+                <i class="fas fa-file-excel"></i> Export to Excel
+              </button>
+              <button class="btn btn-danger" onclick="exportAdminPDF()">
+                <i class="fas fa-file-pdf"></i> Export to PDF
+              </button>
+            </div>
+            <div id="report-preview" class="mt-6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: Add/Edit School -->
+<div class="modal-overlay hidden" id="school-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="school-modal-title">Add School</h3>
+      <button class="modal-close" onclick="closeSchoolModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="school-form" onsubmit="saveSchool(event)">
+        <input type="hidden" id="school-edit-id">
+        <div class="form-group">
+          <label class="form-label">School Name</label>
+          <input type="text" class="form-input" id="school-name-input" required placeholder="Enter school name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">User ID (Username)</label>
+          <input type="text" class="form-input" id="school-username-input" required placeholder="Enter login username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="text" class="form-input" id="school-password-input" required placeholder="Enter password">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSchoolModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('school-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save School
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
