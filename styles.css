@@ -735,10 +735,10 @@ a:hover { color: var(--color-primary-hover); }
     padding-right: 36px;
 }
 
-/* Force dark theme options on all select elements for Chrome/Edge/Safari compatibility */
+/* Force highly visible options on all select elements (white background, dark slate text) */
 select option {
-    background-color: #0f0f2a !important;
-    color: #e2e8f0 !important;
+    background-color: #ffffff !important;
+    color: #1e293b !important;
 }
 
 .form-row {

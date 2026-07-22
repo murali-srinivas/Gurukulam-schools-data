@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS schools (
 CREATE TABLE IF NOT EXISTS students (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
-    class_number TEXT NOT NULL CHECK (class_number IN ('3', '4', '5', '6', '7', '8', '9', '10', 'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T', 'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter A&T')),
+    class_number TEXT NOT NULL CHECK (class_number IN ('3', '4', '5', '6', '7', '8', '9', '10', 'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T', 'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter MEC', 'Sr Inter A&T')),
     section TEXT NOT NULL CHECK (section IN ('A', 'B')),
     roll_number INTEGER NOT NULL CHECK (roll_number BETWEEN 1 AND 40),
     student_name TEXT NOT NULL DEFAULT '',
