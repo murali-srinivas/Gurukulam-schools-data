@@ -182,7 +182,7 @@ const SECTIONS = ['A', 'B'];
 const CLASSES = [
     '3', '4', '5', '6', '7', '8', '9', '10',
     'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T',
-    'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter A&T'
+    'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter MEC', 'Sr Inter A&T'
 ];
 const MAX_STUDENTS = 40;
 

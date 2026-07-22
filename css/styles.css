@@ -706,14 +706,26 @@ a:hover { color: var(--color-primary-hover); }
     margin-bottom: 6px;
 }
 
-.form-input,
-.form-select {
+.form-input {
     width: 100%;
     padding: 10px 14px;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
+    font-size: 0.88rem;
+    font-family: inherit;
+    transition: var(--transition);
+    outline: none;
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px 14px;
+    background-color: #1a1a35; /* Solid background to prevent transparent dropdown popups */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: #ffffff;
     font-size: 0.88rem;
     font-family: inherit;
     transition: var(--transition);
@@ -733,6 +745,12 @@ a:hover { color: var(--color-primary-hover); }
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 36px;
+}
+
+/* Force highly visible dark theme options on all select elements (solid dark background, white text) */
+select option {
+    background-color: #1a1a35 !important;
+    color: #ffffff !important;
 }
 
 .form-row {
@@ -786,13 +804,12 @@ a:hover { color: var(--color-primary-hover); }
     letter-spacing: 0.5px;
 }
 
-.filter-group select,
-.filter-group input {
+.filter-group select {
     padding: 9px 12px;
-    background: var(--bg-input);
+    background-color: #1a1a35; /* Solid background to prevent transparent dropdown popups */
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    color: var(--text-primary);
+    color: #ffffff;
     font-size: 0.82rem;
     font-family: inherit;
     outline: none;
@@ -805,6 +822,15 @@ a:hover { color: var(--color-primary-hover); }
 }
 
 .filter-group input {
+    padding: 9px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-family: inherit;
+    outline: none;
+    transition: var(--transition);
     background-image: none;
     padding-right: 12px;
 }
@@ -923,10 +949,10 @@ tbody tr:last-child td {
 
 .table-select {
     padding: 6px 10px;
-    background: var(--bg-input);
+    background-color: #1a1a35; /* Solid background to prevent transparent dropdown popups */
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    color: var(--text-primary);
+    color: #ffffff;
     font-size: 0.84rem;
     font-family: inherit;
     outline: none;
