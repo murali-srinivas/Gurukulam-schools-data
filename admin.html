@@ -32,6 +32,9 @@
       <div class="nav-item" onclick="switchTab('students')" id="nav-students">
         <i class="fas fa-users"></i> Students
       </div>
+      <div class="nav-item" onclick="switchTab('staff')" id="nav-staff">
+        <i class="fas fa-chalkboard-teacher"></i> Staff Data
+      </div>
       <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
         <i class="fas fa-file-alt"></i> Exam Marks
       </div>
@@ -209,7 +212,61 @@
             <div id="report-preview" class="mt-6"></div>
           </div>
         </div>
+      <!-- TAB: STAFF DATA -->
+      <div class="tab-pane" id="tab-staff">
+        <div class="d-flex justify-between align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title"><i class="fas fa-chalkboard-teacher"></i> Staff Management</h2>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="openAdminStaffModal()">
+              <i class="fas fa-plus"></i> Add Staff
+            </button>
+            <button class="btn btn-success" onclick="exportAdminStaffExcel()">
+              <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportAdminStaffPDF()">
+              <i class="fas fa-file-pdf"></i> Export PDF
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>School</label>
+              <select id="staff-filter-school" onchange="loadAdminStaff()">
+                <option value="">All Schools</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Type</label>
+              <select id="staff-filter-type" onchange="loadAdminStaff()">
+                <option value="">All Types</option>
+                <option value="Regular">Regular</option>
+                <option value="Out Sourcing">Out Sourcing</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name of the Staff</th>
+                  <th>Designation</th>
+                  <th>Regular/Out Sourcing</th>
+                  <th>Subject</th>
+                  <th>Joined Service</th>
+                  <th>Working at Institution</th>
+                  <th>School Name</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-staff-table">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
     </div>
   </main>
 </div>
@@ -242,6 +299,62 @@
       <button class="btn btn-outline" onclick="closeSchoolModal()">Cancel</button>
       <button class="btn btn-primary" onclick="document.getElementById('school-form').requestSubmit()">
         <i class="fas fa-save"></i> Save School
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Staff (Admin Mode) -->
+<div class="modal-overlay hidden" id="admin-staff-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="admin-staff-modal-title">Add Staff Member</h3>
+      <button class="modal-close" onclick="closeAdminStaffModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="admin-staff-form" onsubmit="saveAdminStaff(event)">
+        <input type="hidden" id="admin-staff-edit-id">
+        <div class="form-group">
+          <label class="form-label">School</label>
+          <select class="form-select" id="admin-staff-school-select" required>
+            <!-- Will be populated by JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Name of the Staff</label>
+          <input type="text" class="form-input" id="admin-staff-name" required placeholder="Enter full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Designation</label>
+          <input type="text" class="form-input" id="admin-staff-designation" required placeholder="e.g. TGT, PGT, Principal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Employment Type</label>
+          <select class="form-select" id="admin-staff-emp-type" required>
+            <option value="Regular">Regular</option>
+            <option value="Out Sourcing">Out Sourcing</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <input type="text" class="form-input" id="admin-staff-subject" required placeholder="e.g. Mathematics, English">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Joined in the Service</label>
+            <input type="date" class="form-input" id="admin-staff-joined-service">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Working at Institution</label>
+            <input type="date" class="form-input" id="admin-staff-joined-institution">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAdminStaffModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('admin-staff-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Staff
       </button>
     </div>
   </div>

@@ -67,6 +67,26 @@ CREATE POLICY "Allow all on students" ON students
 CREATE POLICY "Allow all on exam_marks" ON exam_marks
     FOR ALL USING (true) WITH CHECK (true);
 
+-- 4. Staff Table
+CREATE TABLE IF NOT EXISTS staff (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+    staff_name TEXT NOT NULL,
+    designation TEXT NOT NULL,
+    employment_type TEXT NOT NULL CHECK (employment_type IN ('Regular', 'Out Sourcing')),
+    subject TEXT NOT NULL,
+    joined_service_date DATE,
+    joined_institution_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_staff_school ON staff(school_id);
+
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all on staff" ON staff
+    FOR ALL USING (true) WITH CHECK (true);
+
 -- ============================================
 -- Seed Admin Account
 -- ============================================

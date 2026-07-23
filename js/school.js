@@ -44,6 +44,7 @@ function switchTab(tabName) {
   const titles = {
     'overview': 'Overview',
     'students': 'Student Data Entry',
+    'staff': 'Staff Profile',
     'marks': 'Enter Exam Marks',
     'reports': 'Export Reports'
   };
@@ -51,6 +52,8 @@ function switchTab(tabName) {
   
   if (tabName === 'students') {
     loadStudentTable();
+  } else if (tabName === 'staff') {
+    loadStaffTable();
   } else if (tabName === 'overview') {
     loadOverviewData();
   }
@@ -661,6 +664,141 @@ async function exportPDF() {
     
     doc.save(`${currentSchool.school_name.replace(/\\s+/g, '_')}_Report_${dateStr}.pdf`);
     
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ============================================
+// Staff Profile CRUD logic
+// ============================================
+let allStaff = [];
+
+async function loadStaffTable() {
+  showLoading();
+  try {
+    const { data, error } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('school_id', currentSchool.id)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    
+    allStaff = data || [];
+    const tbody = document.getElementById('staff-table-body');
+    tbody.innerHTML = '';
+    
+    if (allStaff.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center">No staff records found. Click Add to create one.</td></tr>';
+      return;
+    }
+    
+    allStaff.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${s.staff_name}</td>
+        <td>${s.designation}</td>
+        <td><span class="badge ${s.employment_type === 'Regular' ? 'badge-pass' : 'badge-info'}">${s.employment_type}</span></td>
+        <td>${s.subject}</td>
+        <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
+        <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-outline" onclick='openStaffModal(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i> Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function openStaffModal(s = null) {
+  const modal = document.getElementById('staff-modal');
+  const title = document.getElementById('staff-modal-title');
+  const form = document.getElementById('staff-form');
+  
+  form.reset();
+  document.getElementById('staff-edit-id').value = '';
+  
+  if (s) {
+    title.textContent = 'Edit Staff Member';
+    document.getElementById('staff-edit-id').value = s.id;
+    document.getElementById('staff-name').value = s.staff_name;
+    document.getElementById('staff-designation').value = s.designation;
+    document.getElementById('staff-emp-type').value = s.employment_type;
+    document.getElementById('staff-subject').value = s.subject;
+    document.getElementById('staff-joined-service').value = s.joined_service_date || '';
+    document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
+  } else {
+    title.textContent = 'Add Staff Member';
+  }
+  
+  modal.classList.remove('hidden');
+}
+
+function closeStaffModal() {
+  document.getElementById('staff-modal').classList.add('hidden');
+}
+
+async function saveStaff(event) {
+  event.preventDefault();
+  
+  const id = document.getElementById('staff-edit-id').value;
+  const name = document.getElementById('staff-name').value.trim();
+  const designation = document.getElementById('staff-designation').value.trim();
+  const empType = document.getElementById('staff-emp-type').value;
+  const subject = document.getElementById('staff-subject').value.trim();
+  const joinedService = document.getElementById('staff-joined-service').value || null;
+  const joinedInst = document.getElementById('staff-joined-institution').value || null;
+  
+  const payload = {
+    school_id: currentSchool.id,
+    staff_name: name,
+    designation: designation,
+    employment_type: empType,
+    subject: subject,
+    joined_service_date: joinedService,
+    joined_institution_date: joinedInst
+  };
+  
+  showLoading();
+  try {
+    if (id) {
+      const { error } = await supabase.from('staff').update(payload).eq('id', id);
+      if (error) throw error;
+      showToast('Staff profile updated successfully', 'success');
+    } else {
+      const { error } = await supabase.from('staff').insert([payload]);
+      if (error) throw error;
+      showToast('Staff profile created successfully', 'success');
+    }
+    closeStaffModal();
+    loadStaffTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function deleteStaff(id, name) {
+  if (!confirm(`Are you sure you want to delete staff member: ${name}?`)) return;
+  
+  showLoading();
+  try {
+    const { error } = await supabase.from('staff').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Staff member deleted successfully', 'success');
+    loadStaffTable();
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
