@@ -42,6 +42,7 @@ function switchTab(tabName) {
         'overview': 'Overview',
         'schools': 'Manage Schools',
         'students': 'Students',
+        'staff': 'Staff Management',
         'marks': 'Exam Marks',
         'reports': 'Reports & Export'
     };
@@ -51,6 +52,8 @@ function switchTab(tabName) {
         renderSchoolsTable();
     } else if (tabName === 'students') {
         loadAdminStudents();
+    } else if (tabName === 'staff') {
+        loadAdminStaff();
     } else if (tabName === 'marks') {
         onAdminMarksFilterChange();
     }
@@ -75,6 +78,8 @@ async function loadSchoolsList() {
         populateFilterDropdown('stu-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('marks-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('report-filter-school', schoolOptions, 'id', 'name');
+        populateFilterDropdown('staff-filter-school', schoolOptions, 'id', 'name');
+        populateFilterDropdown('admin-staff-school-select', schoolOptions, 'id', 'name');
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
@@ -146,22 +151,25 @@ async function loadOverviewData() {
     }
 }
 
-function openSchoolModal(school = null) {
+function openSchoolModal(id = null) {
     const modal = document.getElementById('school-modal');
     const title = document.getElementById('school-modal-title');
     const form = document.getElementById('school-form');
     
     form.reset();
+    document.getElementById('school-edit-id').value = '';
     
-    if (school) {
-        title.textContent = 'Edit School';
-        document.getElementById('school-edit-id').value = school.id;
-        document.getElementById('school-name-input').value = school.school_name;
-        document.getElementById('school-username-input').value = school.username;
-        document.getElementById('school-password-input').value = school.password;
+    if (id) {
+        const school = allSchools.find(item => item.id === id);
+        if (school) {
+            title.textContent = 'Edit School';
+            document.getElementById('school-edit-id').value = school.id;
+            document.getElementById('school-name-input').value = school.school_name;
+            document.getElementById('school-username-input').value = school.username;
+            document.getElementById('school-password-input').value = school.password;
+        }
     } else {
         title.textContent = 'Add School';
-        document.getElementById('school-edit-id').value = '';
     }
     
     modal.classList.remove('hidden');
@@ -262,7 +270,7 @@ function renderSchoolsTable() {
             <td>${createdDate}</td>
             <td>
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-outline" onclick='openSchoolModal(${JSON.stringify(school).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-outline" onclick="openSchoolModal('${school.id}')"><i class="fas fa-edit"></i> Edit</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteSchool('${school.id}', '${school.school_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
                 </div>
             </td>
@@ -739,6 +747,220 @@ function populateFilterDropdown(selectId, options, valueKey, textKey) {
         }
         select.appendChild(option);
     });
+}
+
+// ============================================
+// Staff Management CRUD Logic
+// ============================================
+let adminStaffData = [];
+
+async function loadAdminStaff() {
+    const schoolId = document.getElementById('staff-filter-school').value;
+    const typeVal = document.getElementById('staff-filter-type').value;
+    
+    showLoading();
+    try {
+        let query = supabase.from('staff').select('*');
+        if (schoolId) query = query.eq('school_id', schoolId);
+        if (typeVal) query = query.eq('employment_type', typeVal);
+        
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        adminStaffData = data || [];
+        const tbody = document.getElementById('admin-staff-table');
+        tbody.innerHTML = '';
+        
+        if (adminStaffData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No staff records found.</td></tr>';
+            return;
+        }
+        
+        adminStaffData.forEach(s => {
+            const school = allSchools.find(sc => sc.id === s.school_id);
+            const schoolName = school ? school.school_name : 'Unknown School';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${s.staff_name}</td>
+                <td>${s.designation}</td>
+                <td><span class="badge ${s.employment_type === 'Regular' ? 'badge-pass' : 'badge-info'}">${s.employment_type}</span></td>
+                <td>${s.subject}</td>
+                <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
+                <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
+                <td>${schoolName}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline" onclick="openAdminStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAdminStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function openAdminStaffModal(id = null) {
+    const modal = document.getElementById('admin-staff-modal');
+    const title = document.getElementById('admin-staff-modal-title');
+    const form = document.getElementById('admin-staff-form');
+    
+    form.reset();
+    document.getElementById('admin-staff-edit-id').value = '';
+    
+    if (id) {
+        const s = adminStaffData.find(item => item.id === id);
+        if (s) {
+            title.textContent = 'Edit Staff Member';
+            document.getElementById('admin-staff-edit-id').value = s.id;
+            document.getElementById('admin-staff-school-select').value = s.school_id;
+            document.getElementById('admin-staff-name').value = s.staff_name;
+            document.getElementById('admin-staff-designation').value = s.designation;
+            document.getElementById('admin-staff-emp-type').value = s.employment_type;
+            document.getElementById('admin-staff-subject').value = s.subject;
+            document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
+            document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
+        }
+    } else {
+        title.textContent = 'Add Staff Member';
+        if (allSchools.length > 0) {
+            document.getElementById('admin-staff-school-select').value = allSchools[0].id;
+        }
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeAdminStaffModal() {
+    document.getElementById('admin-staff-modal').classList.add('hidden');
+}
+
+async function saveAdminStaff(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('admin-staff-edit-id').value;
+    const schoolId = document.getElementById('admin-staff-school-select').value;
+    const name = document.getElementById('admin-staff-name').value.trim();
+    const designation = document.getElementById('admin-staff-designation').value.trim();
+    const empType = document.getElementById('admin-staff-emp-type').value;
+    const subject = document.getElementById('admin-staff-subject').value.trim();
+    const joinedService = document.getElementById('admin-staff-joined-service').value || null;
+    const joinedInst = document.getElementById('admin-staff-joined-institution').value || null;
+    
+    const payload = {
+        school_id: schoolId,
+        staff_name: name,
+        designation: designation,
+        employment_type: empType,
+        subject: subject,
+        joined_service_date: joinedService,
+        joined_institution_date: joinedInst
+    };
+    
+    showLoading();
+    try {
+        if (id) {
+            const { error } = await supabase.from('staff').update(payload).eq('id', id);
+            if (error) throw error;
+            showToast('Staff profile updated successfully', 'success');
+        } else {
+            const { error } = await supabase.from('staff').insert([payload]);
+            if (error) throw error;
+            showToast('Staff profile created successfully', 'success');
+        }
+        closeAdminStaffModal();
+        loadAdminStaff();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteAdminStaff(id, name) {
+    if (!confirm(`Are you sure you want to delete staff member: ${name}?`)) return;
+    
+    showLoading();
+    try {
+        const { error } = await supabase.from('staff').delete().eq('id', id);
+        if (error) throw error;
+        showToast('Staff member deleted successfully', 'success');
+        loadAdminStaff();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function exportAdminStaffExcel() {
+    if (adminStaffData.length === 0) {
+        showToast('No staff data to export', 'warning');
+        return;
+    }
+    
+    const rows = adminStaffData.map(s => {
+        const school = allSchools.find(sc => sc.id === s.school_id);
+        const schoolName = school ? school.school_name : 'Unknown School';
+        return {
+            'Name of the Staff': s.staff_name,
+            'Designation': s.designation,
+            'Employment Type': s.employment_type,
+            'Subject': s.subject,
+            'Joined in Service': s.joined_service_date || '',
+            'Working at Institution': s.joined_institution_date || '',
+            'School Name': schoolName
+        };
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Staff List");
+    XLSX.writeFile(wb, `Staff_List_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showToast('Exported to Excel successfully', 'success');
+}
+
+async function exportAdminStaffPDF() {
+    if (adminStaffData.length === 0) {
+        showToast('No staff data to export', 'warning');
+        return;
+    }
+    
+    const head = [['Name of the Staff', 'Designation', 'Type', 'Subject', 'Joined Service', 'Joined Inst', 'School Name']];
+    const body = adminStaffData.map(s => {
+        const school = allSchools.find(sc => sc.id === s.school_id);
+        const schoolName = school ? school.school_name : 'Unknown School';
+        return [
+            s.staff_name,
+            s.designation,
+            s.employment_type,
+            s.subject,
+            s.joined_service_date || '-',
+            s.joined_institution_date || '-',
+            schoolName
+        ];
+    });
+    
+    const doc = new jspdf.jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.text('School Data Portal - Staff Report', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: 28,
+        styles: { fontSize: 8 }
+    });
+    
+    doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('Exported to PDF successfully', 'success');
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);
