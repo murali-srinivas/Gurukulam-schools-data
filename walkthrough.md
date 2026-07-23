@@ -112,6 +112,12 @@ Then open `http://localhost:3000` in your browser.
 |------|-----------|-----------|-----------------|
 | FA1, FA2, FA3, FA4 | 50 | 18 | 10 |
 | SA1, SA2 | 100 | 35 | 20 |
+| MBLP Exam1, MBLP Exam2, MBLP Exam3, End line test | Graded (A, B, C) | N/A | N/A |
+
+### Graded Exams (MBLP & End line test)
+* **Classes**: 3rd Class to 9th Class only.
+* **Subjects**: Telugu, English, Maths only.
+* **Grades**: Dropdown option list with A, B, and C groups (replaces marks input and pass/fail calculations).
 
 ### Access Control
 * **Admin**: Can view, edit, and export data for ALL schools (students, marks, staff)

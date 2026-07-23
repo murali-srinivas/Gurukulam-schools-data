@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS exam_marks (
     student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     class_number TEXT NOT NULL,
-    exam_type TEXT NOT NULL CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2')),
+    exam_type TEXT NOT NULL CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2','MBLP Exam1','MBLP Exam2','MBLP Exam3','End line test')),
     subject TEXT NOT NULL,
     marks INTEGER,
     pass_fail TEXT,

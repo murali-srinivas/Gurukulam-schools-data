@@ -177,7 +177,7 @@ console.log('Supabase REST client initialized for:', SUPABASE_URL);
 // Shared Constants & Utilities
 // ============================================
 
-const EXAM_TYPES = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2'];
+const EXAM_TYPES = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2', 'MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'];
 const SECTIONS = ['A', 'B'];
 const CLASSES = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
@@ -186,7 +186,11 @@ const CLASSES = [
 ];
 const MAX_STUDENTS = 40;
 
-function getSubjects(classVal) {
+function getSubjects(classVal, examType = '') {
+    if (examType && ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) {
+        return ['Telugu', 'English', 'Maths'];
+    }
+    
     const num = parseInt(classVal);
     if (!isNaN(num)) {
         if (num >= 1 && num <= 2) {
@@ -219,10 +223,12 @@ function getSubjects(classVal) {
 }
 
 function getMaxMarks(examType) {
+    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
     return examType.startsWith('FA') ? 50 : 100;
 }
 
 function getPassMark(examType, subject) {
+    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
     const isFA = examType.startsWith('FA');
     const isHindi = subject === 'Hindi';
     if (isFA) return isHindi ? 10 : 18;
@@ -230,6 +236,7 @@ function getPassMark(examType, subject) {
 }
 
 function calculatePassFail(marks, examType, subject) {
+    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return null;
     if (marks === null || marks === undefined || marks === '') return null;
     const passMark = getPassMark(examType, subject);
     return parseInt(marks) >= passMark ? 'Pass' : 'Fail';
@@ -325,4 +332,42 @@ function classDisplayName(val) {
         return val + (suffixes[num] || 'th') + ' Class';
     }
     return val;
+}
+
+function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
+    const classSelect = document.getElementById(classSelectId);
+    const examSelect = document.getElementById(examSelectId);
+    
+    if (!classSelect || !examSelect) return;
+    
+    const classVal = classSelect.value;
+    const allowedForGraded = ['3', '4', '5', '6', '7', '8', '9'].includes(classVal);
+    const selectedValue = examSelect.value;
+    
+    examSelect.innerHTML = '';
+    
+    if (hasAllOption) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'All Exams';
+        examSelect.appendChild(opt);
+    } else {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Select Exam';
+        examSelect.appendChild(opt);
+    }
+    
+    const standardExams = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2'];
+    const gradedExams = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'];
+    
+    const availableExams = allowedForGraded ? [...standardExams, ...gradedExams] : standardExams;
+    
+    availableExams.forEach(exam => {
+        const opt = document.createElement('option');
+        opt.value = exam;
+        opt.textContent = exam;
+        if (exam === selectedValue) opt.selected = true;
+        examSelect.appendChild(opt);
+    });
 }

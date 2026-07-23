@@ -21,6 +21,9 @@ async function initAdmin() {
         populateFilterDropdown('marks-filter-class', classOpts, 'value', 'label');
         populateFilterDropdown('report-filter-class', classOpts, 'value', 'label');
 
+        updateExamDropdown('marks-filter-class', 'marks-filter-exam');
+        updateExamDropdown('report-filter-class', 'report-filter-exam', true);
+
         await loadSchoolsList();
         await loadOverviewData();
     } catch (err) {
@@ -355,6 +358,8 @@ function resetStudentFilters() {
 }
 
 function onAdminMarksFilterChange() {
+    updateExamDropdown('marks-filter-class', 'marks-filter-exam');
+    
     const s = document.getElementById('marks-filter-school').value;
     const c = document.getElementById('marks-filter-class').value;
     const sec = document.getElementById('marks-filter-section').value;
@@ -364,6 +369,11 @@ function onAdminMarksFilterChange() {
     if (btn) {
         btn.disabled = !(s && c && sec && e);
     }
+}
+
+function onAdminReportClassChange() {
+    updateExamDropdown('report-filter-class', 'report-filter-exam', true);
+    generateReport();
 }
 
 let currentMarksContext = null;
@@ -389,7 +399,7 @@ async function loadAdminMarks() {
             
         if (stuError) throw stuError;
         
-        const subjects = getSubjects(classNum);
+        const subjects = getSubjects(classNum, examType);
         const container = document.getElementById('admin-marks-container');
         
         if (!students || students.length === 0) {
@@ -434,6 +444,7 @@ async function loadAdminMarks() {
         
         students.forEach(student => {
             const studentMarks = marksData.filter(m => m.student_id === student.id) || [];
+            const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
             
             html += `<tr data-studentid="${student.id}">
                 <td>${student.roll_number}</td>
@@ -446,28 +457,45 @@ async function loadAdminMarks() {
             
             subjects.forEach(sub => {
                 const markRecord = studentMarks.find(m => m.subject === sub);
-                const markVal = markRecord && markRecord.marks !== null ? markRecord.marks : '';
+                const markVal = markRecord ? (isGraded ? markRecord.pass_fail : (markRecord.marks !== null ? markRecord.marks : '')) : '';
                 
                 if (markVal !== '') hasMarks = true;
-                if (markRecord && markRecord.pass_fail === 'Fail') anyFail = true;
-                if (!markRecord || markRecord.pass_fail === 'Fail') allPass = false;
+                if (!isGraded && markRecord && markRecord.pass_fail === 'Fail') anyFail = true;
+                if (!isGraded && (!markRecord || markRecord.pass_fail === 'Fail')) allPass = false;
                 
-                html += `
-                    <td>
-                        <input type="number" class="marks-input mark-input" 
-                               data-subject="${sub}" 
-                               value="${markVal}" 
-                               min="0" max="${getMaxMarks(examType)}">
-                    </td>
-                `;
+                if (isGraded) {
+                    html += `
+                        <td>
+                            <select class="table-select mark-input" data-subject="${sub}">
+                                <option value="">--</option>
+                                <option value="A" ${markVal === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${markVal === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${markVal === 'C' ? 'selected' : ''}>C</option>
+                            </select>
+                        </td>
+                    `;
+                } else {
+                    html += `
+                        <td>
+                            <input type="number" class="marks-input mark-input" 
+                                   data-subject="${sub}" 
+                                   value="${markVal}" 
+                                   min="0" max="${getMaxMarks(examType)}">
+                        </td>
+                    `;
+                }
             });
             
             let resultHtml = '-';
             if (hasMarks) {
-                if (anyFail) {
-                    resultHtml = '<span class="badge badge-fail">Fail</span>';
-                } else if (allPass) {
-                    resultHtml = '<span class="badge badge-pass">Pass</span>';
+                if (isGraded) {
+                    resultHtml = '<span class="badge badge-pass">Graded</span>';
+                } else {
+                    if (anyFail) {
+                        resultHtml = '<span class="badge badge-fail">Fail</span>';
+                    } else if (allPass) {
+                        resultHtml = '<span class="badge badge-pass">Pass</span>';
+                    }
                 }
             }
             
@@ -493,6 +521,7 @@ async function saveAdminMarks() {
         const { examType, classNum, schoolId, subjects } = currentMarksContext;
         const tbody = document.getElementById('admin-marks-tbody');
         const rows = tbody.querySelectorAll('tr');
+        const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
         
         const upsertData = [];
         
@@ -505,18 +534,30 @@ async function saveAdminMarks() {
                 const markStr = input.value;
                 
                 if (markStr.trim() !== '') {
-                    const marksNum = parseInt(markStr);
-                    const pf = calculatePassFail(marksNum, examType, subject);
-                    
-                    upsertData.push({
-                        student_id: studentId,
-                        school_id: schoolId,
-                        class_number: classNum,
-                        exam_type: examType,
-                        subject: subject,
-                        marks: marksNum,
-                        pass_fail: pf
-                    });
+                    if (isGraded) {
+                        upsertData.push({
+                            student_id: studentId,
+                            school_id: schoolId,
+                            class_number: classNum,
+                            exam_type: examType,
+                            subject: subject,
+                            marks: null,
+                            pass_fail: markStr
+                        });
+                    } else {
+                        const marksNum = parseInt(markStr);
+                        const pf = calculatePassFail(marksNum, examType, subject);
+                        
+                        upsertData.push({
+                            student_id: studentId,
+                            school_id: schoolId,
+                            class_number: classNum,
+                            exam_type: examType,
+                            subject: subject,
+                            marks: marksNum,
+                            pass_fail: pf
+                        });
+                    }
                 }
             });
         });
@@ -588,8 +629,9 @@ async function exportAdminExcel() {
                 'Gender': student.gender || ''
             };
             
-            const subjects = getSubjects(student.class_number);
+            const subjects = getSubjects(student.class_number, examType);
             const studentMarks = marks.filter(m => m.student_id === student.id);
+            const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
             
             let anyFail = false;
             let allPass = true;
@@ -597,18 +639,18 @@ async function exportAdminExcel() {
             
             subjects.forEach(sub => {
                 const mark = studentMarks.find(m => m.subject === sub);
-                if (mark && mark.marks !== null) {
-                    row[sub] = mark.marks;
+                if (mark) {
+                    row[sub] = isGraded ? mark.pass_fail : mark.marks;
                     hasMarks = true;
-                    if (mark.pass_fail === 'Fail') anyFail = true;
+                    if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
                 } else {
                     row[sub] = '';
-                    allPass = false;
+                    if (!isGraded) allPass = false;
                 }
             });
             
             if (hasMarks) {
-                row['Result'] = anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete');
+                row['Result'] = isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete'));
             } else {
                 row['Result'] = '';
             }
@@ -669,7 +711,7 @@ async function exportAdminPDF() {
         const school = allSchools.find(s => s.id === schoolId);
         const schoolName = school ? school.school_name : 'Unknown';
         
-        const subjects = getSubjects(classVal);
+        const subjects = getSubjects(classVal, examType);
         
         const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Result']];
         const body = [];
@@ -677,6 +719,7 @@ async function exportAdminPDF() {
         students.forEach(student => {
             const studentMarks = marks.filter(m => m.student_id === student.id);
             const row = [student.roll_number, student.student_name, student.section];
+            const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
             
             let anyFail = false;
             let allPass = true;
@@ -684,17 +727,17 @@ async function exportAdminPDF() {
             
             subjects.forEach(sub => {
                 const mark = studentMarks.find(m => m.subject === sub);
-                if (mark && mark.marks !== null) {
-                    row.push(mark.marks);
+                if (mark) {
+                    row.push(isGraded ? mark.pass_fail : mark.marks);
                     hasMarks = true;
-                    if (mark.pass_fail === 'Fail') anyFail = true;
+                    if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
                 } else {
                     row.push('-');
-                    allPass = false;
+                    if (!isGraded) allPass = false;
                 }
             });
             
-            const result = hasMarks ? (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp')) : '-';
+            const result = hasMarks ? (isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp'))) : '-';
             row.push(result);
             body.push(row);
         });

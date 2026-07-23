@@ -29,6 +29,9 @@ async function initSchool() {
     });
   });
   
+  updateExamDropdown('marks-class', 'marks-exam');
+  updateExamDropdown('report-class', 'report-exam', true);
+  
   await loadOverviewData();
 }
 
@@ -245,6 +248,7 @@ async function saveStudents() {
 }
 
 function onMarksFilterChange() {
+  updateExamDropdown('marks-class', 'marks-exam');
   const exam = document.getElementById('marks-exam').value;
   document.getElementById('save-marks-btn').disabled = !exam;
 }
@@ -261,7 +265,7 @@ async function loadMarksTable() {
   
   showLoading();
   try {
-    const subjects = getSubjects(classNum);
+    const subjects = getSubjects(classNum, exam);
     const maxMarks = getMaxMarks(exam);
     
     const { data: students, error: stuError } = await supabase
@@ -329,14 +333,30 @@ async function loadMarksTable() {
       
       const sMarks = marksMap[s.id] || {};
       
+      const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(exam);
+      
       subjects.forEach(sub => {
         const m = sMarks[sub];
-        const val = m ? m.marks : '';
-        rowHtml += `
-          <td>
-            <input type="number" class="table-input marks-input" data-subject="${sub}" value="${val}" min="0" max="${maxMarks}" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
-          </td>
-        `;
+        const val = m ? (isGraded ? m.pass_fail : (m.marks !== null ? m.marks : '')) : '';
+        
+        if (isGraded) {
+          rowHtml += `
+            <td>
+              <select class="table-select marks-input" data-subject="${sub}" onchange="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
+                <option value="">--</option>
+                <option value="A" ${val === 'A' ? 'selected' : ''}>A</option>
+                <option value="B" ${val === 'B' ? 'selected' : ''}>B</option>
+                <option value="C" ${val === 'C' ? 'selected' : ''}>C</option>
+              </select>
+            </td>
+          `;
+        } else {
+          rowHtml += `
+            <td>
+              <input type="number" class="table-input marks-input" data-subject="${sub}" value="${val}" min="0" max="${maxMarks}" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
+            </td>
+          `;
+        }
       });
       
       rowHtml += `<td class="result-cell">-</td>`;
@@ -357,6 +377,7 @@ async function loadMarksTable() {
 function updateRowResult(row, subjectsStr, examType) {
   const inputs = row.querySelectorAll('.marks-input');
   const maxMarks = getMaxMarks(examType);
+  const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
   
   let allFilled = true;
   let allPass = true;
@@ -370,14 +391,18 @@ function updateRowResult(row, subjectsStr, examType) {
       return;
     }
     
-    val = parseInt(val);
-    if (val < 0 || val > maxMarks) {
-      input.classList.add('invalid');
-      allFilled = false; 
-    } else {
+    if (isGraded) {
       input.classList.remove('invalid');
-      const passMark = getPassMark(examType, subject);
-      if (val < passMark) allPass = false;
+    } else {
+      val = parseInt(val);
+      if (val < 0 || val > maxMarks) {
+        input.classList.add('invalid');
+        allFilled = false; 
+      } else {
+        input.classList.remove('invalid');
+        const passMark = getPassMark(examType, subject);
+        if (val < passMark) allPass = false;
+      }
     }
   });
   
@@ -385,10 +410,14 @@ function updateRowResult(row, subjectsStr, examType) {
   if (!allFilled) {
     resultCell.innerHTML = '-';
   } else {
-    if (allPass) {
-      resultCell.innerHTML = '<span class="badge badge-pass">Pass</span>';
+    if (isGraded) {
+      resultCell.innerHTML = '<span class="badge badge-pass">Graded</span>';
     } else {
-      resultCell.innerHTML = '<span class="badge badge-fail">Fail</span>';
+      if (allPass) {
+        resultCell.innerHTML = '<span class="badge badge-pass">Pass</span>';
+      } else {
+        resultCell.innerHTML = '<span class="badge badge-fail">Fail</span>';
+      }
     }
   }
 }
@@ -404,6 +433,7 @@ async function saveMarks() {
   
   const rows = tbody.querySelectorAll('tr');
   const maxMarks = getMaxMarks(exam);
+  const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(exam);
   
   const upserts = [];
   let hasInvalid = false;
@@ -420,20 +450,32 @@ async function saveMarks() {
         const valStr = inp.value;
         const sub = inp.dataset.subject;
         if (valStr !== '') {
-          const marks = parseFloat(valStr);
-          if (marks >= 0 && marks <= maxMarks) {
-            const passFail = calculatePassFail(marks, exam, sub);
+          if (isGraded) {
             upserts.push({
               student_id: studentId,
               school_id: currentSchool.id,
               class_number: classNum,
               exam_type: exam,
               subject: sub,
-              marks: marks,
-              pass_fail: passFail
+              marks: null,
+              pass_fail: valStr // A, B, or C
             });
           } else {
-            hasInvalid = true;
+            const marks = parseFloat(valStr);
+            if (marks >= 0 && marks <= maxMarks) {
+              const passFail = calculatePassFail(marks, exam, sub);
+              upserts.push({
+                student_id: studentId,
+                school_id: currentSchool.id,
+                class_number: classNum,
+                exam_type: exam,
+                subject: sub,
+                marks: marks,
+                pass_fail: passFail
+              });
+            } else {
+              hasInvalid = true;
+            }
           }
         }
       });
@@ -513,6 +555,10 @@ async function fetchReportData() {
   return { students, marksMap, exams };
 }
 
+function onReportClassChange() {
+  updateExamDropdown('report-class', 'report-exam', true);
+}
+
 async function exportExcel() {
   showLoading();
   try {
@@ -548,25 +594,35 @@ async function exportExcel() {
             'Exam': ex
           };
           
+          const subjects = getSubjects(s.class_number, ex);
           let exMarks = sMarks[ex] || {};
           let allPass = true;
           let anyMark = false;
+          const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
           
           subjects.forEach(sub => {
             const m = exMarks[sub];
             if (m) {
-              row[`${sub}`] = m.marks;
-              row[`${sub} Result`] = m.pass_fail;
+              row[`${sub}`] = isGraded ? m.pass_fail : m.marks;
+              if (!isGraded) {
+                row[`${sub} Result`] = m.pass_fail;
+                if (m.pass_fail === 'Fail') allPass = false;
+              }
               anyMark = true;
-              if (m.pass_fail === 'Fail') allPass = false;
             } else {
               row[`${sub}`] = '';
-              row[`${sub} Result`] = '';
-              allPass = false; 
+              if (!isGraded) {
+                row[`${sub} Result`] = '';
+                allPass = false; 
+              }
             }
           });
           
-          row['Overall Result'] = anyMark ? (allPass ? 'Pass' : 'Fail') : '-';
+          if (isGraded) {
+            row['Overall Result'] = anyMark ? 'Graded' : '-';
+          } else {
+            row['Overall Result'] = anyMark ? (allPass ? 'Pass' : 'Fail') : '-';
+          }
           allData.push(row);
         });
       }
@@ -610,7 +666,6 @@ async function exportPDF() {
     let tableBody = [];
     
     students.forEach(s => {
-      const subjects = getSubjects(s.class_number);
       const sMarks = marksMap[s.id] || {};
       
       if (exams.length === 0) {
@@ -625,21 +680,24 @@ async function exportPDF() {
          ]);
       } else {
         exams.forEach(ex => {
+          const subjects = getSubjects(s.class_number, ex);
           let exMarks = sMarks[ex] || {};
           let allPass = true;
           let anyMark = false;
           let subStr = [];
           
+          const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
+          
           subjects.forEach(sub => {
             const m = exMarks[sub];
             if (m) {
-              subStr.push(`${sub}: ${m.marks}`);
+              subStr.push(isGraded ? `${sub}: ${m.pass_fail}` : `${sub}: ${m.marks}`);
               anyMark = true;
-              if (m.pass_fail === 'Fail') allPass = false;
+              if (!isGraded && m.pass_fail === 'Fail') allPass = false;
             }
           });
           
-          let overall = anyMark ? (allPass ? 'Pass' : 'Fail') : '-';
+          let overall = anyMark ? (isGraded ? 'Graded' : (allPass ? 'Pass' : 'Fail')) : '-';
           
           tableBody.push([
             classDisplayName(s.class_number),
