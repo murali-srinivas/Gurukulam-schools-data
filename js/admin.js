@@ -80,6 +80,7 @@ async function loadSchoolsList() {
         populateFilterDropdown('report-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('staff-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('admin-staff-school-select', schoolOptions, 'id', 'name');
+        populateFilterDropdown('overview-school-select', schoolOptions, 'id', 'name');
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
@@ -780,11 +781,16 @@ async function loadAdminStaff() {
             const school = allSchools.find(sc => sc.id === s.school_id);
             const schoolName = school ? school.school_name : 'Unknown School';
             
+            let badgeClass = 'badge-info';
+            if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
+            else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
+            else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${s.staff_name}</td>
                 <td>${s.designation}</td>
-                <td><span class="badge ${s.employment_type === 'Regular' ? 'badge-pass' : 'badge-info'}">${s.employment_type}</span></td>
+                <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
                 <td>${s.subject}</td>
                 <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
                 <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
@@ -961,6 +967,73 @@ async function exportAdminStaffPDF() {
     
     doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     showToast('Exported to PDF successfully', 'success');
+}
+
+// ============================================
+// Overview Tab: Selected School Stats Loader
+// ============================================
+async function loadSelectedSchoolStats() {
+    const schoolId = document.getElementById('overview-school-select').value;
+    const detailsDiv = document.getElementById('overview-school-details');
+    
+    if (!schoolId) {
+        detailsDiv.classList.add('hidden');
+        return;
+    }
+    
+    showLoading();
+    try {
+        // 1. Get total students count & group by class
+        const { data: students, error: stuError } = await supabase
+            .from('students')
+            .select('class_number')
+            .eq('school_id', schoolId);
+            
+        if (stuError) throw stuError;
+        
+        // 2. Get total staff count
+        const { count: staffCount, error: staffError } = await supabase
+            .from('staff')
+            .select('id', { count: 'exact', head: true })
+            .eq('school_id', schoolId);
+            
+        if (staffError) throw staffError;
+        
+        // Populate stats values
+        document.getElementById('selected-school-students').textContent = students.length;
+        document.getElementById('selected-school-staff').textContent = staffCount || 0;
+        
+        // Count class-wise student enrollment
+        const classCounts = {};
+        // Initialize active classes
+        CLASSES.forEach(c => {
+            classCounts[c] = 0;
+        });
+        students.forEach(s => {
+            if (classCounts[s.class_number] !== undefined) {
+                classCounts[s.class_number]++;
+            }
+        });
+        
+        // Populate class-wise student enrollment table
+        const tbody = document.getElementById('selected-school-classes-table');
+        tbody.innerHTML = '';
+        
+        CLASSES.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${classDisplayName(c)}</td>
+                <td><strong>${classCounts[c]}</strong> students</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        detailsDiv.classList.remove('hidden');
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);

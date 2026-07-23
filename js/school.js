@@ -697,11 +697,16 @@ async function loadStaffTable() {
     }
     
     allStaff.forEach(s => {
+      let badgeClass = 'badge-info';
+      if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
+      else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
+      else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${s.staff_name}</td>
         <td>${s.designation}</td>
-        <td><span class="badge ${s.employment_type === 'Regular' ? 'badge-pass' : 'badge-info'}">${s.employment_type}</span></td>
+        <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
         <td>${s.subject}</td>
         <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
         <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>

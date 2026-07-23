@@ -70,10 +70,10 @@ Then open `http://localhost:3000` in your browser.
 ### Admin Dashboard
 | Tab | Features |
 |-----|----------|
-| **Overview** | Stats cards (schools, students, classes, exams), schools overview table |
+| **Overview** | Stats cards (schools, students, classes, exams), schools overview table, and a **School Search Dropdown** to preview student/staff stats for any individual school |
 | **Manage Schools** | Add, edit, delete school accounts with name/username/password |
 | **Students** | View all students across all schools, filter by school/class/section |
-| **Staff Data** | View staff across all schools, filter by school/employment type, edit, delete, add staff records, export to **Excel** & **PDF** |
+| **Staff Data** | View staff across all schools, filter by school/employment type (Regular, Out Sourcing, Contract, MTS), edit, delete, add staff records, export to **Excel** & **PDF** |
 | **Exam Marks** | View and edit marks for any school, auto pass/fail calculation |
 | **Reports** | Export filtered students/marks data to **Excel** or **PDF** |
 
@@ -82,7 +82,7 @@ Then open `http://localhost:3000` in your browser.
 |-----|----------|
 | **Overview** | Own school stats, class-wise student count table |
 | **Students** | 40-row data entry grid per class/section, save to database |
-| **Staff Profile** | Complete staff management (Add, edit, delete staff records), fields: Name, Designation, Regular/Out Sourcing, Subject, Joined Service Date, Joined Institution Date |
+| **Staff Profile** | Complete staff management (Add, edit, delete staff records), fields: Name, Designation, Employment Type (Regular, Out Sourcing, Contract, MTS), Subject, Joined Service Date, Joined Institution Date |
 | **Enter Marks** | Subject-wise marks entry, real-time pass/fail badges, validation |
 | **Reports** | Export own school's data to **Excel** or **PDF** |
 
