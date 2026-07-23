@@ -180,15 +180,18 @@ console.log('Supabase REST client initialized for:', SUPABASE_URL);
 const EXAM_TYPES = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2'];
 const SECTIONS = ['A', 'B'];
 const CLASSES = [
-    '3', '4', '5', '6', '7', '8', '9', '10',
-    'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T',
-    'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter MEC', 'Sr Inter A&T'
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+    'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T', 'Jr Inter CGA',
+    'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter MEC', 'Sr Inter A&T', 'Sr Inter CGA'
 ];
 const MAX_STUDENTS = 40;
 
 function getSubjects(classVal) {
     const num = parseInt(classVal);
     if (!isNaN(num)) {
+        if (num >= 1 && num <= 2) {
+            return ['Telugu', 'English', 'Maths'];
+        }
         if (num >= 3 && num <= 5) {
             return ['Telugu', 'English', 'Maths', 'EVS'];
         }
@@ -208,6 +211,8 @@ function getSubjects(classVal) {
         return ['English', 'Second Language', 'Maths', 'Economics', 'Commerce'];
     } else if (val.includes('A&T')) {
         return ['English', 'Second Language', 'Agriculture', 'Technology', 'Vocational-Practical'];
+    } else if (val.includes('CGA')) {
+        return ['English', 'Second Language', 'CGA-Theory', 'Computer-Graphics', 'Animation-Practical'];
     }
     
     return ['Telugu', 'Hindi', 'English', 'Maths', 'Science', 'Social'];

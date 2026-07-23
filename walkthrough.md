@@ -91,11 +91,12 @@ Then open `http://localhost:3000` in your browser.
 ## 📊 Business Rules Implemented
 
 ### Classes and Groups
-* **Classes 3 – 10**: Standard numbering format.
-* **Junior Intermediate**: MPC, BiPC, CEC, HEC, MEC, A&T groups.
-* **Senior Intermediate**: MPC, BiPC, CEC, HEC, MEC, A&T groups.
+* **Classes 1 – 10**: Standard numbering format.
+* **Junior Intermediate**: MPC, BiPC, CEC, HEC, MEC, A&T, CGA groups.
+* **Senior Intermediate**: MPC, BiPC, CEC, HEC, MEC, A&T, CGA groups.
 
 ### Subjects Mapping
+* **1st – 2nd Class**: Telugu, English, Maths
 * **3rd – 5th Class**: Telugu, English, Maths, EVS
 * **6th – 10th Class**: Telugu, Hindi, English, Maths, Science, Social
 * **Intermediate MPC**: English, Second Language, Maths-A, Maths-B, Physics, Chemistry
@@ -104,6 +105,7 @@ Then open `http://localhost:3000` in your browser.
 * **Intermediate HEC**: English, Second Language, History, Economics, Civics
 * **Intermediate MEC**: English, Second Language, Maths, Economics, Commerce
 * **Intermediate A&T**: English, Second Language, Agriculture, Technology, Vocational-Practical
+* **Intermediate CGA**: English, Second Language, CGA-Theory, Computer-Graphics, Animation-Practical
 
 ### Pass Marks
 | Exam | Max Marks | Pass Mark | Hindi Pass Mark |
