@@ -707,7 +707,7 @@ async function loadStaffTable() {
         <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-sm btn-outline" onclick='openStaffModal(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i> Edit</button>
+            <button class="btn btn-sm btn-outline" onclick="openStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
             <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
           </div>
         </td>
@@ -721,7 +721,7 @@ async function loadStaffTable() {
   }
 }
 
-function openStaffModal(s = null) {
+function openStaffModal(id = null) {
   const modal = document.getElementById('staff-modal');
   const title = document.getElementById('staff-modal-title');
   const form = document.getElementById('staff-form');
@@ -729,15 +729,18 @@ function openStaffModal(s = null) {
   form.reset();
   document.getElementById('staff-edit-id').value = '';
   
-  if (s) {
-    title.textContent = 'Edit Staff Member';
-    document.getElementById('staff-edit-id').value = s.id;
-    document.getElementById('staff-name').value = s.staff_name;
-    document.getElementById('staff-designation').value = s.designation;
-    document.getElementById('staff-emp-type').value = s.employment_type;
-    document.getElementById('staff-subject').value = s.subject;
-    document.getElementById('staff-joined-service').value = s.joined_service_date || '';
-    document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
+  if (id) {
+    const s = allStaff.find(item => item.id === id);
+    if (s) {
+      title.textContent = 'Edit Staff Member';
+      document.getElementById('staff-edit-id').value = s.id;
+      document.getElementById('staff-name').value = s.staff_name;
+      document.getElementById('staff-designation').value = s.designation;
+      document.getElementById('staff-emp-type').value = s.employment_type;
+      document.getElementById('staff-subject').value = s.subject;
+      document.getElementById('staff-joined-service').value = s.joined_service_date || '';
+      document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
+    }
   } else {
     title.textContent = 'Add Staff Member';
   }

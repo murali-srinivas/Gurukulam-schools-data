@@ -151,22 +151,25 @@ async function loadOverviewData() {
     }
 }
 
-function openSchoolModal(school = null) {
+function openSchoolModal(id = null) {
     const modal = document.getElementById('school-modal');
     const title = document.getElementById('school-modal-title');
     const form = document.getElementById('school-form');
     
     form.reset();
+    document.getElementById('school-edit-id').value = '';
     
-    if (school) {
-        title.textContent = 'Edit School';
-        document.getElementById('school-edit-id').value = school.id;
-        document.getElementById('school-name-input').value = school.school_name;
-        document.getElementById('school-username-input').value = school.username;
-        document.getElementById('school-password-input').value = school.password;
+    if (id) {
+        const school = allSchools.find(item => item.id === id);
+        if (school) {
+            title.textContent = 'Edit School';
+            document.getElementById('school-edit-id').value = school.id;
+            document.getElementById('school-name-input').value = school.school_name;
+            document.getElementById('school-username-input').value = school.username;
+            document.getElementById('school-password-input').value = school.password;
+        }
     } else {
         title.textContent = 'Add School';
-        document.getElementById('school-edit-id').value = '';
     }
     
     modal.classList.remove('hidden');
@@ -267,7 +270,7 @@ function renderSchoolsTable() {
             <td>${createdDate}</td>
             <td>
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-outline" onclick='openSchoolModal(${JSON.stringify(school).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-outline" onclick="openSchoolModal('${school.id}')"><i class="fas fa-edit"></i> Edit</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteSchool('${school.id}', '${school.school_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
                 </div>
             </td>
@@ -788,7 +791,7 @@ async function loadAdminStaff() {
                 <td>${schoolName}</td>
                 <td>
                     <div class="btn-group">
-                        <button class="btn btn-sm btn-outline" onclick='openAdminStaffModal(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-outline" onclick="openAdminStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteAdminStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
                     </div>
                 </td>
@@ -802,7 +805,7 @@ async function loadAdminStaff() {
     }
 }
 
-function openAdminStaffModal(s = null) {
+function openAdminStaffModal(id = null) {
     const modal = document.getElementById('admin-staff-modal');
     const title = document.getElementById('admin-staff-modal-title');
     const form = document.getElementById('admin-staff-form');
@@ -810,16 +813,19 @@ function openAdminStaffModal(s = null) {
     form.reset();
     document.getElementById('admin-staff-edit-id').value = '';
     
-    if (s) {
-        title.textContent = 'Edit Staff Member';
-        document.getElementById('admin-staff-edit-id').value = s.id;
-        document.getElementById('admin-staff-school-select').value = s.school_id;
-        document.getElementById('admin-staff-name').value = s.staff_name;
-        document.getElementById('admin-staff-designation').value = s.designation;
-        document.getElementById('admin-staff-emp-type').value = s.employment_type;
-        document.getElementById('admin-staff-subject').value = s.subject;
-        document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
-        document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
+    if (id) {
+        const s = adminStaffData.find(item => item.id === id);
+        if (s) {
+            title.textContent = 'Edit Staff Member';
+            document.getElementById('admin-staff-edit-id').value = s.id;
+            document.getElementById('admin-staff-school-select').value = s.school_id;
+            document.getElementById('admin-staff-name').value = s.staff_name;
+            document.getElementById('admin-staff-designation').value = s.designation;
+            document.getElementById('admin-staff-emp-type').value = s.employment_type;
+            document.getElementById('admin-staff-subject').value = s.subject;
+            document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
+            document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
+        }
     } else {
         title.textContent = 'Add Staff Member';
         if (allSchools.length > 0) {
