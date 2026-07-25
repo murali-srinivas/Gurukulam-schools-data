@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS staff (
     designation TEXT NOT NULL,
     employment_type TEXT NOT NULL CHECK (employment_type IN ('Regular', 'Out Sourcing', 'Contract', 'MTS')),
     subject TEXT NOT NULL,
+    qualification TEXT,
     joined_service_date DATE,
     joined_institution_date DATE,
     created_at TIMESTAMPTZ DEFAULT NOW()

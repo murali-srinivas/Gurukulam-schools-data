@@ -119,6 +119,10 @@ Then open `http://localhost:3000` in your browser.
 * **Subjects**: Telugu, English, Maths only.
 * **Grades**: Dropdown option list with A, B, and C groups (replaces marks input and pass/fail calculations).
 
+### Staff Qualifications
+* **Preset Qualifications**: Inter, Degree, PG, B.Ed, Pandit Training, TET Paper -1 Qualified, TET Paper-2.
+* **Others**: Selection of "Others (with subjects)" dynamically displays a secondary specify field to input any custom qualification and subject details.
+
 ### Access Control
 * **Admin**: Can view, edit, and export data for ALL schools (students, marks, staff)
 * **Schools**: Can only view, edit, and export their OWN data

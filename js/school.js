@@ -750,7 +750,7 @@ async function loadStaffTable() {
     tbody.innerHTML = '';
     
     if (allStaff.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center">No staff records found. Click Add to create one.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center">No staff records found. Click Add to create one.</td></tr>';
       return;
     }
     
@@ -765,6 +765,7 @@ async function loadStaffTable() {
         <td>${s.staff_name}</td>
         <td>${s.designation}</td>
         <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
+        <td>${s.qualification || '-'}</td>
         <td>${s.subject}</td>
         <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
         <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
@@ -803,9 +804,24 @@ function openStaffModal(id = null) {
       document.getElementById('staff-subject').value = s.subject;
       document.getElementById('staff-joined-service').value = s.joined_service_date || '';
       document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
+      
+      const standardQuals = ['Inter', 'Degree', 'PG', 'B.Ed', 'Pandit Training', 'TET Paper -1 Qualified', 'TET Paper-2'];
+      if (standardQuals.includes(s.qualification)) {
+        document.getElementById('staff-qualification').value = s.qualification;
+        document.getElementById('staff-qual-other-group').classList.add('hidden');
+        document.getElementById('staff-qual-other').value = '';
+        document.getElementById('staff-qual-other').removeAttribute('required');
+      } else {
+        document.getElementById('staff-qualification').value = 'Others (with subjects)';
+        document.getElementById('staff-qual-other-group').classList.remove('hidden');
+        document.getElementById('staff-qual-other').value = s.qualification || '';
+        document.getElementById('staff-qual-other').setAttribute('required', 'true');
+      }
     }
   } else {
     title.textContent = 'Add Staff Member';
+    document.getElementById('staff-qual-other-group').classList.add('hidden');
+    document.getElementById('staff-qual-other').removeAttribute('required');
   }
   
   modal.classList.remove('hidden');
@@ -826,11 +842,15 @@ async function saveStaff(event) {
   const joinedService = document.getElementById('staff-joined-service').value || null;
   const joinedInst = document.getElementById('staff-joined-institution').value || null;
   
+  const qualSel = document.getElementById('staff-qualification').value;
+  const qualVal = qualSel === 'Others (with subjects)' ? document.getElementById('staff-qual-other').value.trim() : qualSel;
+  
   const payload = {
     school_id: currentSchool.id,
     staff_name: name,
     designation: designation,
     employment_type: empType,
+    qualification: qualVal,
     subject: subject,
     joined_service_date: joinedService,
     joined_institution_date: joinedInst

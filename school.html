@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=1.8">
+  <link rel="stylesheet" href="css/styles.css?v=1.9">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -198,6 +198,7 @@
                   <th>Name of the Staff</th>
                   <th>Designation</th>
                   <th>Regular/Out Sourcing</th>
+                  <th>Qualification</th>
                   <th>Subject</th>
                   <th>Joined in Service</th>
                   <th>Working at Institution</th>
@@ -247,6 +248,23 @@
           <label class="form-label">Subject</label>
           <input type="text" class="form-input" id="staff-subject" required placeholder="e.g. Mathematics, English">
         </div>
+        <div class="form-group">
+          <label class="form-label">Qualifications</label>
+          <select class="form-select" id="staff-qualification" required onchange="toggleQualOther(this, 'staff-qual-other-group')">
+            <option value="Inter">Inter</option>
+            <option value="Degree">Degree</option>
+            <option value="PG">PG</option>
+            <option value="B.Ed">B.Ed</option>
+            <option value="Pandit Training">Pandit Training</option>
+            <option value="TET Paper -1 Qualified">TET Paper -1 Qualified</option>
+            <option value="TET Paper-2">TET Paper-2</option>
+            <option value="Others (with subjects)">Others (with subjects)</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="staff-qual-other-group">
+          <label class="form-label">Specify Qualification & Subjects</label>
+          <input type="text" class="form-input" id="staff-qual-other" placeholder="e.g. PG in Chemistry">
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Joined in the Service</label>
@@ -271,8 +289,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=1.8"></script>
-<script src="js/auth.js?v=1.8"></script>
-<script src="js/school.js?v=1.8"></script>
+<script src="js/supabase-config.js?v=1.9"></script>
+<script src="js/auth.js?v=1.9"></script>
+<script src="js/school.js?v=1.9"></script>
 </body>
 </html>

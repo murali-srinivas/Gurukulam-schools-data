@@ -371,3 +371,15 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
         examSelect.appendChild(opt);
     });
 }
+
+function toggleQualOther(selectEl, otherGroupId) {
+    const group = document.getElementById(otherGroupId);
+    if (!group) return;
+    if (selectEl.value === 'Others (with subjects)') {
+        group.classList.remove('hidden');
+        group.querySelector('input').setAttribute('required', 'true');
+    } else {
+        group.classList.add('hidden');
+        group.querySelector('input').removeAttribute('required');
+    }
+}
