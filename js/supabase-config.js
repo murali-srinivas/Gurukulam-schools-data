@@ -372,14 +372,82 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
     });
 }
 
-function toggleQualOther(selectEl, otherGroupId) {
+function toggleQualOtherCheckbox(checkbox, otherGroupId) {
     const group = document.getElementById(otherGroupId);
     if (!group) return;
-    if (selectEl.value === 'Others (with subjects)') {
+    if (checkbox.checked) {
         group.classList.remove('hidden');
         group.querySelector('input').setAttribute('required', 'true');
     } else {
         group.classList.add('hidden');
         group.querySelector('input').removeAttribute('required');
+        group.querySelector('input').value = '';
+    }
+}
+
+function getSelectedQualifications(containerId, otherInputId) {
+    const container = document.getElementById(containerId);
+    if (!container) return '';
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    const selected = [];
+    let hasOther = false;
+    
+    checkboxes.forEach(cb => {
+        if (cb.value === 'Others (with subjects)') {
+            hasOther = true;
+        } else {
+            selected.push(cb.value);
+        }
+    });
+    
+    if (hasOther) {
+        const otherVal = document.getElementById(otherInputId).value.trim();
+        if (otherVal) {
+            selected.push(otherVal);
+        } else {
+            selected.push('Others');
+        }
+    }
+    
+    return selected.join(', ');
+}
+
+function setSelectedQualifications(containerId, otherInputId, qualString) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    const otherInput = document.getElementById(otherInputId);
+    const otherGroup = otherInput.closest('.form-group');
+    
+    // Reset all
+    checkboxes.forEach(cb => cb.checked = false);
+    otherInput.value = '';
+    otherGroup.classList.add('hidden');
+    otherInput.removeAttribute('required');
+    
+    if (!qualString) return;
+    
+    const parts = qualString.split(',').map(s => s.trim());
+    const standardQuals = ['Inter', 'Degree', 'PG', 'B.Ed', 'Pandit Training', 'TET Paper -1 Qualified', 'TET Paper-2 Qualified'];
+    
+    let otherParts = [];
+    
+    parts.forEach(part => {
+        if (standardQuals.includes(part)) {
+            const cb = Array.from(checkboxes).find(c => c.value === part);
+            if (cb) cb.checked = true;
+        } else if (part) {
+            otherParts.push(part);
+        }
+    });
+    
+    if (otherParts.length > 0) {
+        const otherCb = Array.from(checkboxes).find(c => c.value === 'Others (with subjects)');
+        if (otherCb) {
+            otherCb.checked = true;
+            otherGroup.classList.remove('hidden');
+            otherInput.value = otherParts.join(', ');
+            otherInput.setAttribute('required', 'true');
+        }
     }
 }

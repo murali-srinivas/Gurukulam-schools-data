@@ -1410,3 +1410,34 @@ tbody tr:last-child td {
 .flex-wrap { flex-wrap: wrap; }
 .w-100 { width: 100%; }
 .hidden { display: none !important; }
+
+/* Checkbox Group Layout for Qualifications */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-top: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}

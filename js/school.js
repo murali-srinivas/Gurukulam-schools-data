@@ -805,23 +805,11 @@ function openStaffModal(id = null) {
       document.getElementById('staff-joined-service').value = s.joined_service_date || '';
       document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
       
-      const standardQuals = ['Inter', 'Degree', 'PG', 'B.Ed', 'Pandit Training', 'TET Paper -1 Qualified', 'TET Paper-2'];
-      if (standardQuals.includes(s.qualification)) {
-        document.getElementById('staff-qualification').value = s.qualification;
-        document.getElementById('staff-qual-other-group').classList.add('hidden');
-        document.getElementById('staff-qual-other').value = '';
-        document.getElementById('staff-qual-other').removeAttribute('required');
-      } else {
-        document.getElementById('staff-qualification').value = 'Others (with subjects)';
-        document.getElementById('staff-qual-other-group').classList.remove('hidden');
-        document.getElementById('staff-qual-other').value = s.qualification || '';
-        document.getElementById('staff-qual-other').setAttribute('required', 'true');
-      }
+      setSelectedQualifications('staff-qualification-container', 'staff-qual-other', s.qualification || '');
     }
   } else {
     title.textContent = 'Add Staff Member';
-    document.getElementById('staff-qual-other-group').classList.add('hidden');
-    document.getElementById('staff-qual-other').removeAttribute('required');
+    setSelectedQualifications('staff-qualification-container', 'staff-qual-other', '');
   }
   
   modal.classList.remove('hidden');
@@ -842,8 +830,7 @@ async function saveStaff(event) {
   const joinedService = document.getElementById('staff-joined-service').value || null;
   const joinedInst = document.getElementById('staff-joined-institution').value || null;
   
-  const qualSel = document.getElementById('staff-qualification').value;
-  const qualVal = qualSel === 'Others (with subjects)' ? document.getElementById('staff-qual-other').value.trim() : qualSel;
+  const qualVal = getSelectedQualifications('staff-qualification-container', 'staff-qual-other');
   
   const payload = {
     school_id: currentSchool.id,

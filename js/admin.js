@@ -876,23 +876,11 @@ function openAdminStaffModal(id = null) {
             document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
             document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
             
-            const standardQuals = ['Inter', 'Degree', 'PG', 'B.Ed', 'Pandit Training', 'TET Paper -1 Qualified', 'TET Paper-2'];
-            if (standardQuals.includes(s.qualification)) {
-                document.getElementById('admin-staff-qualification').value = s.qualification;
-                document.getElementById('admin-staff-qual-other-group').classList.add('hidden');
-                document.getElementById('admin-staff-qual-other').value = '';
-                document.getElementById('admin-staff-qual-other').removeAttribute('required');
-            } else {
-                document.getElementById('admin-staff-qualification').value = 'Others (with subjects)';
-                document.getElementById('admin-staff-qual-other-group').classList.remove('hidden');
-                document.getElementById('admin-staff-qual-other').value = s.qualification || '';
-                document.getElementById('admin-staff-qual-other').setAttribute('required', 'true');
-            }
+            setSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other', s.qualification || '');
         }
     } else {
         title.textContent = 'Add Staff Member';
-        document.getElementById('admin-staff-qual-other-group').classList.add('hidden');
-        document.getElementById('admin-staff-qual-other').removeAttribute('required');
+        setSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other', '');
         if (allSchools.length > 0) {
             document.getElementById('admin-staff-school-select').value = allSchools[0].id;
         }
@@ -917,8 +905,7 @@ async function saveAdminStaff(event) {
     const joinedService = document.getElementById('admin-staff-joined-service').value || null;
     const joinedInst = document.getElementById('admin-staff-joined-institution').value || null;
     
-    const qualSel = document.getElementById('admin-staff-qualification').value;
-    const qualVal = qualSel === 'Others (with subjects)' ? document.getElementById('admin-staff-qual-other').value.trim() : qualSel;
+    const qualVal = getSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other');
     
     const payload = {
         school_id: schoolId,

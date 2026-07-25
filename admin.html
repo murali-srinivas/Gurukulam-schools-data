@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=1.9">
+  <link rel="stylesheet" href="css/styles.css?v=2.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -388,17 +388,17 @@
           <input type="text" class="form-input" id="admin-staff-subject" required placeholder="e.g. Mathematics, English">
         </div>
         <div class="form-group">
-          <label class="form-label">Qualifications</label>
-          <select class="form-select" id="admin-staff-qualification" required onchange="toggleQualOther(this, 'admin-staff-qual-other-group')">
-            <option value="Inter">Inter</option>
-            <option value="Degree">Degree</option>
-            <option value="PG">PG</option>
-            <option value="B.Ed">B.Ed</option>
-            <option value="Pandit Training">Pandit Training</option>
-            <option value="TET Paper -1 Qualified">TET Paper -1 Qualified</option>
-            <option value="TET Paper-2">TET Paper-2</option>
-            <option value="Others (with subjects)">Others (with subjects)</option>
-          </select>
+          <label class="form-label">Qualifications (Multiple options may be selected)</label>
+          <div class="checkbox-grid" id="admin-staff-qualification-container">
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="Inter"> Inter</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="Degree"> Degree</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="PG"> PG</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="B.Ed"> B.Ed</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="Pandit Training"> Pandit Training</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="TET Paper -1 Qualified"> TET Paper -1 Qualified</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="TET Paper-2 Qualified"> TET Paper-2 Qualified</label>
+            <label class="checkbox-label"><input type="checkbox" name="qualification" value="Others (with subjects)" onchange="toggleQualOtherCheckbox(this, 'admin-staff-qual-other-group')"> Others (with subjects)</label>
+          </div>
         </div>
         <div class="form-group hidden" id="admin-staff-qual-other-group">
           <label class="form-label">Specify Qualification & Subjects</label>
@@ -428,8 +428,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=1.9"></script>
-<script src="js/auth.js?v=1.9"></script>
-<script src="js/admin.js?v=1.9"></script>
+<script src="js/supabase-config.js?v=2.0"></script>
+<script src="js/auth.js?v=2.0"></script>
+<script src="js/admin.js?v=2.0"></script>
 </body>
 </html>
