@@ -834,7 +834,7 @@ async function loadAdminStaff() {
                 <td>${s.staff_name}</td>
                 <td>${s.designation}</td>
                 <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
-                <td>${s.qualification || '-'}</td>
+                <td>${formatQualificationSummary(s)}</td>
                 <td>${s.subject}</td>
                 <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
                 <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
@@ -876,11 +876,11 @@ function openAdminStaffModal(id = null) {
             document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
             document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
             
-            setSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other', s.qualification || '');
+            populateQualFormFields('admin-staff', s);
         }
     } else {
         title.textContent = 'Add Staff Member';
-        setSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other', '');
+        populateQualFormFields('admin-staff', null);
         if (allSchools.length > 0) {
             document.getElementById('admin-staff-school-select').value = allSchools[0].id;
         }
@@ -905,17 +905,17 @@ async function saveAdminStaff(event) {
     const joinedService = document.getElementById('admin-staff-joined-service').value || null;
     const joinedInst = document.getElementById('admin-staff-joined-institution').value || null;
     
-    const qualVal = getSelectedQualifications('admin-staff-qualification-container', 'admin-staff-qual-other');
+    const qualData = readQualFormFields('admin-staff');
     
     const payload = {
         school_id: schoolId,
         staff_name: name,
         designation: designation,
         employment_type: empType,
-        qualification: qualVal,
         subject: subject,
         joined_service_date: joinedService,
-        joined_institution_date: joinedInst
+        joined_institution_date: joinedInst,
+        ...qualData
     };
     
     showLoading();

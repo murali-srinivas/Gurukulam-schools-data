@@ -372,82 +372,125 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
     });
 }
 
-function toggleQualOtherCheckbox(checkbox, otherGroupId) {
-    const group = document.getElementById(otherGroupId);
-    if (!group) return;
-    if (checkbox.checked) {
-        group.classList.remove('hidden');
-        group.querySelector('input').setAttribute('required', 'true');
-    } else {
-        group.classList.add('hidden');
-        group.querySelector('input').removeAttribute('required');
-        group.querySelector('input').value = '';
-    }
+function toggleQualRow(cb) {
+    const row = cb.closest('tr');
+    const inputs = row.querySelectorAll('input[type="text"]');
+    inputs.forEach(inp => {
+        if (cb.checked) {
+            inp.removeAttribute('disabled');
+            inp.setAttribute('required', 'true');
+        } else {
+            inp.setAttribute('disabled', 'true');
+            inp.removeAttribute('required');
+            inp.value = '';
+        }
+    });
 }
 
-function getSelectedQualifications(containerId, otherInputId) {
-    const container = document.getElementById(containerId);
-    if (!container) return '';
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
-    const selected = [];
-    let hasOther = false;
+function formatQualificationSummary(s) {
+    const summary = [];
+    if (s.qualification_inter) summary.push('Inter');
+    if (s.qualification_degree) summary.push(`Degree (${s.degree_subjects || '-'}: ${s.degree_marks || '-'}%)`);
+    if (s.qualification_pg) summary.push(`PG (${s.pg_subjects || '-'}: ${s.pg_marks || '-'}%)`);
+    if (s.qualification_bed) summary.push(`B.Ed (${s.bed_subjects || '-'}: ${s.bed_marks || '-'}%)`);
+    if (s.qualification_pandit) summary.push(`Pandit Tr. (${s.pandit_subjects || '-'}: ${s.pandit_marks || '-'}%)`);
+    if (s.qualification_tet_p1) summary.push(`TET P1 (${s.tet_p1_subjects || '-'}: ${s.tet_p1_marks || '-'}%)`);
+    if (s.qualification_tet_p2) summary.push(`TET P2 (${s.tet_p2_subjects || '-'}: ${s.tet_p2_marks || '-'}%)`);
+    if (s.qualification_others) summary.push(s.qualification_others);
     
-    checkboxes.forEach(cb => {
-        if (cb.value === 'Others (with subjects)') {
-            hasOther = true;
-        } else {
-            selected.push(cb.value);
+    return summary.join(', ') || '-';
+}
+
+function populateQualFormFields(prefix, s = null) {
+    const list = [
+        { key: 'inter', hasFields: false },
+        { key: 'degree', hasFields: true },
+        { key: 'pg', hasFields: true },
+        { key: 'bed', hasFields: true },
+        { key: 'pandit', hasFields: true },
+        { key: 'tet1', dbKey: 'tet_p1', hasFields: true },
+        { key: 'tet2', dbKey: 'tet_p2', hasFields: true }
+    ];
+    
+    list.forEach(item => {
+        const cb = document.getElementById(`${prefix}-qual-${item.key}`);
+        if (!cb) return;
+        
+        const dbKeyBool = item.dbKey ? `qualification_${item.dbKey}` : `qualification_${item.key}`;
+        const isChecked = s ? !!s[dbKeyBool] : false;
+        cb.checked = isChecked;
+        
+        if (item.hasFields) {
+            const subInput = document.getElementById(`${prefix}-qual-${item.key}-sub`);
+            const marksInput = document.getElementById(`${prefix}-qual-${item.key}-marks`);
+            
+            if (isChecked) {
+                subInput.removeAttribute('disabled');
+                subInput.setAttribute('required', 'true');
+                subInput.value = s ? (s[`${item.dbKey || item.key}_subjects`] || '') : '';
+                
+                marksInput.removeAttribute('disabled');
+                marksInput.setAttribute('required', 'true');
+                marksInput.value = s ? (s[`${item.dbKey || item.key}_marks`] || '') : '';
+            } else {
+                subInput.setAttribute('disabled', 'true');
+                subInput.removeAttribute('required');
+                subInput.value = '';
+                
+                marksInput.setAttribute('disabled', 'true');
+                marksInput.removeAttribute('required');
+                marksInput.value = '';
+            }
         }
     });
     
-    if (hasOther) {
-        const otherVal = document.getElementById(otherInputId).value.trim();
-        if (otherVal) {
-            selected.push(otherVal);
+    // Others
+    const otherCb = document.getElementById(`${prefix}-qual-others`);
+    if (otherCb) {
+        const isChecked = s ? !!s.qualification_others : false;
+        otherCb.checked = isChecked;
+        const descInput = document.getElementById(`${prefix}-qual-others-desc`);
+        if (isChecked) {
+            descInput.removeAttribute('disabled');
+            descInput.setAttribute('required', 'true');
+            descInput.value = s ? (s.qualification_others || '') : '';
         } else {
-            selected.push('Others');
+            descInput.setAttribute('disabled', 'true');
+            descInput.removeAttribute('required');
+            descInput.value = '';
         }
     }
-    
-    return selected.join(', ');
 }
 
-function setSelectedQualifications(containerId, otherInputId, qualString) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-    const otherInput = document.getElementById(otherInputId);
-    const otherGroup = otherInput.closest('.form-group');
-    
-    // Reset all
-    checkboxes.forEach(cb => cb.checked = false);
-    otherInput.value = '';
-    otherGroup.classList.add('hidden');
-    otherInput.removeAttribute('required');
-    
-    if (!qualString) return;
-    
-    const parts = qualString.split(',').map(s => s.trim());
-    const standardQuals = ['Inter', 'Degree', 'PG', 'B.Ed', 'Pandit Training', 'TET Paper -1 Qualified', 'TET Paper-2 Qualified'];
-    
-    let otherParts = [];
-    
-    parts.forEach(part => {
-        if (standardQuals.includes(part)) {
-            const cb = Array.from(checkboxes).find(c => c.value === part);
-            if (cb) cb.checked = true;
-        } else if (part) {
-            otherParts.push(part);
-        }
-    });
-    
-    if (otherParts.length > 0) {
-        const otherCb = Array.from(checkboxes).find(c => c.value === 'Others (with subjects)');
-        if (otherCb) {
-            otherCb.checked = true;
-            otherGroup.classList.remove('hidden');
-            otherInput.value = otherParts.join(', ');
-            otherInput.setAttribute('required', 'true');
-        }
-    }
+function readQualFormFields(prefix) {
+    const data = {
+        qualification_inter: document.getElementById(`${prefix}-qual-inter`).checked,
+        
+        qualification_degree: document.getElementById(`${prefix}-qual-degree`).checked,
+        degree_subjects: document.getElementById(`${prefix}-qual-degree`).checked ? document.getElementById(`${prefix}-qual-degree-sub`).value.trim() : null,
+        degree_marks: document.getElementById(`${prefix}-qual-degree`).checked ? document.getElementById(`${prefix}-qual-degree-marks`).value.trim() : null,
+        
+        qualification_pg: document.getElementById(`${prefix}-qual-pg`).checked,
+        pg_subjects: document.getElementById(`${prefix}-qual-pg`).checked ? document.getElementById(`${prefix}-qual-pg-sub`).value.trim() : null,
+        pg_marks: document.getElementById(`${prefix}-qual-pg`).checked ? document.getElementById(`${prefix}-qual-pg-marks`).value.trim() : null,
+        
+        qualification_bed: document.getElementById(`${prefix}-qual-bed`).checked,
+        bed_subjects: document.getElementById(`${prefix}-qual-bed`).checked ? document.getElementById(`${prefix}-qual-bed-sub`).value.trim() : null,
+        bed_marks: document.getElementById(`${prefix}-qual-bed`).checked ? document.getElementById(`${prefix}-qual-bed-marks`).value.trim() : null,
+        
+        qualification_pandit: document.getElementById(`${prefix}-qual-pandit`).checked,
+        pandit_subjects: document.getElementById(`${prefix}-qual-pandit`).checked ? document.getElementById(`${prefix}-qual-pandit-sub`).value.trim() : null,
+        pandit_marks: document.getElementById(`${prefix}-qual-pandit`).checked ? document.getElementById(`${prefix}-qual-pandit-marks`).value.trim() : null,
+        
+        qualification_tet_p1: document.getElementById(`${prefix}-qual-tet1`).checked,
+        tet_p1_subjects: document.getElementById(`${prefix}-qual-tet1`).checked ? document.getElementById(`${prefix}-qual-tet1-sub`).value.trim() : null,
+        tet_p1_marks: document.getElementById(`${prefix}-qual-tet1`).checked ? document.getElementById(`${prefix}-qual-tet1-marks`).value.trim() : null,
+        
+        qualification_tet_p2: document.getElementById(`${prefix}-qual-tet2`).checked,
+        tet_p2_subjects: document.getElementById(`${prefix}-qual-tet2`).checked ? document.getElementById(`${prefix}-qual-tet2-sub`).value.trim() : null,
+        tet_p2_marks: document.getElementById(`${prefix}-qual-tet2`).checked ? document.getElementById(`${prefix}-qual-tet2-marks`).value.trim() : null,
+        
+        qualification_others: document.getElementById(`${prefix}-qual-others`).checked ? document.getElementById(`${prefix}-qual-others-desc`).value.trim() : null
+    };
+    return data;
 }

@@ -765,7 +765,7 @@ async function loadStaffTable() {
         <td>${s.staff_name}</td>
         <td>${s.designation}</td>
         <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
-        <td>${s.qualification || '-'}</td>
+        <td>${formatQualificationSummary(s)}</td>
         <td>${s.subject}</td>
         <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
         <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
@@ -805,11 +805,11 @@ function openStaffModal(id = null) {
       document.getElementById('staff-joined-service').value = s.joined_service_date || '';
       document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
       
-      setSelectedQualifications('staff-qualification-container', 'staff-qual-other', s.qualification || '');
+      populateQualFormFields('staff', s);
     }
   } else {
     title.textContent = 'Add Staff Member';
-    setSelectedQualifications('staff-qualification-container', 'staff-qual-other', '');
+    populateQualFormFields('staff', null);
   }
   
   modal.classList.remove('hidden');
@@ -830,17 +830,17 @@ async function saveStaff(event) {
   const joinedService = document.getElementById('staff-joined-service').value || null;
   const joinedInst = document.getElementById('staff-joined-institution').value || null;
   
-  const qualVal = getSelectedQualifications('staff-qualification-container', 'staff-qual-other');
+  const qualData = readQualFormFields('staff');
   
   const payload = {
     school_id: currentSchool.id,
     staff_name: name,
     designation: designation,
     employment_type: empType,
-    qualification: qualVal,
     subject: subject,
     joined_service_date: joinedService,
-    joined_institution_date: joinedInst
+    joined_institution_date: joinedInst,
+    ...qualData
   };
   
   showLoading();
