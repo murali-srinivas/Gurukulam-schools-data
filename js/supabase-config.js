@@ -374,15 +374,15 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
 
 function toggleQualRow(cb) {
     const row = cb.closest('tr');
-    const inputs = row.querySelectorAll('input[type="text"]');
+    const inputs = row.querySelectorAll('input[type="text"], select');
     inputs.forEach(inp => {
         if (cb.checked) {
-            inp.removeAttribute('disabled');
+            inp.disabled = false;
             inp.setAttribute('required', 'true');
         } else {
-            inp.setAttribute('disabled', 'true');
+            inp.disabled = true;
             inp.removeAttribute('required');
-            inp.value = '';
+            inp.value = inp.tagName === 'SELECT' ? inp.options[0].value : '';
         }
     });
 }
@@ -429,11 +429,11 @@ function populateQualFormFields(prefix, s = null) {
         if (item.hasType) {
             const typeSelect = document.getElementById(`${prefix}-qual-${item.key}-type`);
             if (isChecked) {
-                typeSelect.removeAttribute('disabled');
+                typeSelect.disabled = false;
                 typeSelect.setAttribute('required', 'true');
                 typeSelect.value = s ? (s[`${item.key}_type`] || typeSelect.options[0].value) : typeSelect.options[0].value;
             } else {
-                typeSelect.setAttribute('disabled', 'true');
+                typeSelect.disabled = true;
                 typeSelect.removeAttribute('required');
                 typeSelect.value = typeSelect.options[0].value;
             }
@@ -444,19 +444,19 @@ function populateQualFormFields(prefix, s = null) {
             const marksInput = document.getElementById(`${prefix}-qual-${item.key}-marks`);
             
             if (isChecked) {
-                subInput.removeAttribute('disabled');
+                subInput.disabled = false;
                 subInput.setAttribute('required', 'true');
                 subInput.value = s ? (s[`${item.dbKey || item.key}_subjects`] || '') : '';
                 
-                marksInput.removeAttribute('disabled');
+                marksInput.disabled = false;
                 marksInput.setAttribute('required', 'true');
                 marksInput.value = s ? (s[`${item.dbKey || item.key}_marks`] || '') : '';
             } else {
-                subInput.setAttribute('disabled', 'true');
+                subInput.disabled = true;
                 subInput.removeAttribute('required');
                 subInput.value = '';
                 
-                marksInput.setAttribute('disabled', 'true');
+                marksInput.disabled = true;
                 marksInput.removeAttribute('required');
                 marksInput.value = '';
             }
@@ -470,11 +470,11 @@ function populateQualFormFields(prefix, s = null) {
         otherCb.checked = isChecked;
         const descInput = document.getElementById(`${prefix}-qual-others-desc`);
         if (isChecked) {
-            descInput.removeAttribute('disabled');
+            descInput.disabled = false;
             descInput.setAttribute('required', 'true');
             descInput.value = s ? (s.qualification_others || '') : '';
         } else {
-            descInput.setAttribute('disabled', 'true');
+            descInput.disabled = true;
             descInput.removeAttribute('required');
             descInput.value = '';
         }
