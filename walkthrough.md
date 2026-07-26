@@ -126,8 +126,12 @@ Then open `http://localhost:3000` in your browser.
 * **Other Options**: Inter, B.Ed, Pandit Training, TET Paper -1 Qualified, TET Paper-2 Qualified, and Others (with custom specify).
 
 ### Access Control
-* **Admin**: Can view, edit, and export data for ALL schools (students, marks, staff)
-* **Schools**: Can only view, edit, and export their OWN data
+* **Admin**:
+  * **Manage Schools**: Full Add, Edit, Delete capabilities.
+  * **Manage Students**: Added full Add, Edit, Delete capabilities (via Student Modal).
+  * **Manage Staff**: Full Add, Edit, Delete capabilities.
+  * **Manage Exam Marks**: Add, Edit (via Marks Sheet), and Delete (added **Delete Marks** button to clear all exam marks for class/section/exam).
+* **Schools**: Can only view, edit, and export their OWN data.
 
 ### Search & Filtering
 * **Admin Dashboard**:

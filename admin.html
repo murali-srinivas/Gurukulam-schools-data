@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.5">
+  <link rel="stylesheet" href="css/styles.css?v=2.6">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -176,13 +176,14 @@
               <input type="text" id="stu-search-input" class="form-input" placeholder="Search name or roll no..." oninput="renderAdminStudents()">
             </div>
             <div class="filter-actions">
+              <button class="btn btn-primary btn-sm" onclick="openStudentModal()"><i class="fas fa-plus"></i> Add Student</button>
               <button class="btn btn-outline btn-sm" onclick="resetStudentFilters()"><i class="fas fa-undo"></i> Reset</button>
             </div>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Roll No</th><th>Student Name</th><th>Gender</th><th>Class</th><th>Section</th><th>School</th></tr>
+                <tr><th>Roll No</th><th>Student Name</th><th>Gender</th><th>Class</th><th>Section</th><th>School</th><th>Actions</th></tr>
               </thead>
               <tbody id="admin-students-table"></tbody>
             </table>
@@ -531,11 +532,67 @@
   </div>
 </div>
 
+<!-- MODAL: Add/Edit Student (Admin Mode) -->
+<div class="modal-overlay hidden" id="student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="student-modal-title">Add Student</h3>
+      <button class="modal-close" onclick="closeStudentModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="student-form" onsubmit="saveStudent(event)">
+        <input type="hidden" id="student-edit-id">
+        <div class="form-group">
+          <label class="form-label">School</label>
+          <select class="form-select" id="student-school-select" required>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class</label>
+          <select class="form-select" id="student-class-select" required>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section</label>
+          <select class="form-select" id="student-section-select" required>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Roll Number</label>
+          <input type="number" class="form-input" id="student-roll-input" required min="1" max="40" placeholder="e.g. 1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student Name</label>
+          <input type="text" class="form-input" id="student-name-input" required placeholder="Enter student's full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-select" id="student-gender-select" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeStudentModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('student-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Student
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=2.5"></script>
-<script src="js/auth.js?v=2.5"></script>
-<script src="js/admin.js?v=2.5"></script>
+<script src="js/supabase-config.js?v=2.6"></script>
+<script src="js/auth.js?v=2.6"></script>
+<script src="js/admin.js?v=2.6"></script>
 </body>
 </html>

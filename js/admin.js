@@ -347,7 +347,7 @@ function renderAdminStudents() {
     });
     
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No students found</td></tr>';
         return;
     }
     
@@ -363,9 +363,140 @@ function renderAdminStudents() {
             <td>${classDisplayName(student.class_number)}</td>
             <td>${student.section}</td>
             <td>${schoolName}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="openStudentModal('${student.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteStudent('${student.id}', '${student.student_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function openStudentModal(id = null) {
+    const modal = document.getElementById('student-modal');
+    const title = document.getElementById('student-modal-title');
+    const form = document.getElementById('student-form');
+    
+    form.reset();
+    document.getElementById('student-edit-id').value = '';
+    
+    // Populate school options
+    const schoolSelect = document.getElementById('student-school-select');
+    schoolSelect.innerHTML = '<option value="">-- Select School --</option>';
+    allSchools.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id;
+        option.textContent = s.school_name;
+        schoolSelect.appendChild(option);
+    });
+    
+    // Populate class options
+    const classSelect = document.getElementById('student-class-select');
+    classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+    CLASSES.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c;
+        option.textContent = classDisplayName(c);
+        classSelect.appendChild(option);
+    });
+    
+    if (id) {
+        const s = adminStudentData.find(item => item.id === id);
+        if (s) {
+            title.textContent = 'Edit Student';
+            document.getElementById('student-edit-id').value = s.id;
+            document.getElementById('student-school-select').value = s.school_id;
+            document.getElementById('student-class-select').value = s.class_number;
+            document.getElementById('student-section-select').value = s.section;
+            document.getElementById('student-roll-input').value = s.roll_number;
+            document.getElementById('student-name-input').value = s.student_name;
+            document.getElementById('student-gender-select').value = s.gender || 'Male';
+        }
+    } else {
+        title.textContent = 'Add Student';
+        // Auto-select filter values if set
+        const schoolFilter = document.getElementById('stu-filter-school').value;
+        const classFilter = document.getElementById('stu-filter-class').value;
+        const sectionFilter = document.getElementById('stu-filter-section').value;
+        if (schoolFilter) document.getElementById('student-school-select').value = schoolFilter;
+        if (classFilter) document.getElementById('student-class-select').value = classFilter;
+        if (sectionFilter) document.getElementById('student-section-select').value = sectionFilter;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeStudentModal() {
+    document.getElementById('student-modal').classList.add('hidden');
+}
+
+async function saveStudent(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('student-edit-id').value;
+    const schoolId = document.getElementById('student-school-select').value;
+    const classVal = document.getElementById('student-class-select').value;
+    const sectionVal = document.getElementById('student-section-select').value;
+    const rollVal = parseInt(document.getElementById('student-roll-input').value);
+    const nameVal = document.getElementById('student-name-input').value.trim();
+    const genderVal = document.getElementById('student-gender-select').value;
+    
+    if (!schoolId || !classVal || !sectionVal || !rollVal || !nameVal) {
+        showToast('Please fill all required fields.', 'warning');
+        return;
+    }
+    
+    const payload = {
+        school_id: schoolId,
+        class_number: classVal,
+        section: sectionVal,
+        roll_number: rollVal,
+        student_name: nameVal,
+        gender: genderVal
+    };
+    
+    showLoading();
+    try {
+        if (id) {
+            // Update
+            const { error } = await supabase.from('students').update(payload).eq('id', id);
+            if (error) throw error;
+            showToast('Student updated successfully!', 'success');
+        } else {
+            // Insert
+            const { error } = await supabase.from('students').insert([payload]);
+            if (error) throw error;
+            showToast('Student added successfully!', 'success');
+        }
+        closeStudentModal();
+        loadAdminStudents();
+    } catch (err) {
+        console.error(err);
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteStudent(id, name) {
+    if (!confirm(`Are you sure you want to delete student: ${name}? This will delete all associated exam marks.`)) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const { error } = await supabase.from('students').delete().eq('id', id);
+        if (error) throw error;
+        showToast('Student deleted successfully!', 'success');
+        loadAdminStudents();
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to delete student', 'error');
+    } finally {
+        hideLoading();
+    }
 }
 
 async function loadAdminStudents() {
@@ -472,7 +603,10 @@ async function loadAdminMarks() {
         currentMarksContext = { schoolId, classNum, sectionVal, examType, students, subjects };
         
         let html = `
-            <div class="d-flex justify-end mb-4">
+            <div class="d-flex justify-end mb-4 gap-2">
+                <button class="btn btn-danger" onclick="deleteAdminMarks()">
+                    <i class="fas fa-trash-alt"></i> Delete Marks
+                </button>
                 <button class="btn btn-primary" onclick="saveAdminMarks()">
                     <i class="fas fa-save"></i> Save Marks
                 </button>
@@ -622,6 +756,35 @@ async function saveAdminMarks() {
     } catch (err) {
         console.error(err);
         showToast('Failed to save marks', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteAdminMarks() {
+    if (!currentMarksContext) return;
+    const { examType, students } = currentMarksContext;
+    
+    if (!confirm(`Are you sure you want to delete all marks for this class, section, and exam? This cannot be undone.`)) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const studentIds = students.map(s => s.id);
+        const { error } = await supabase
+            .from('exam_marks')
+            .delete()
+            .eq('exam_type', examType)
+            .in('student_id', studentIds);
+            
+        if (error) throw error;
+        
+        showToast('Marks deleted successfully', 'success');
+        await loadAdminMarks();
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to delete marks', 'error');
     } finally {
         hideLoading();
     }
