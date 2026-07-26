@@ -129,6 +129,11 @@ Then open `http://localhost:3000` in your browser.
 * **Admin**: Can view, edit, and export data for ALL schools (students, marks, staff)
 * **Schools**: Can only view, edit, and export their OWN data
 
+### Search & Filtering
+* **Search School**: Added a real-time school search bar to filter school list stats.
+* **Search Student**: Added a real-time student search bar to instantly query names/roll numbers.
+* **Search Staff**: Added a real-time staff search bar to instantly query names, subjects, qualifications, or designations.
+
 ---
 
 ## ✅ What Was Built

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.3">
+  <link rel="stylesheet" href="css/styles.css?v=2.4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -83,7 +83,8 @@
           </div>
           <div class="card-body">
             <div class="filter-group" style="max-width: 400px; margin-bottom: 20px;">
-              <label>Select School from Dropdown</label>
+              <label>Select School</label>
+              <input type="text" id="overview-school-search" class="form-input" style="margin-bottom: 8px;" placeholder="Search school name..." oninput="filterSchoolDropdown()">
               <select id="overview-school-select" class="form-select" onchange="loadSelectedSchoolStats()">
                 <option value="">-- Select a School --</option>
               </select>
@@ -169,6 +170,10 @@
             <div class="filter-group">
               <label>Section</label>
               <select id="stu-filter-section" onchange="loadAdminStudents()"><option value="">All</option><option value="A">A</option><option value="B">B</option></select>
+            </div>
+            <div class="filter-group" style="flex-grow: 1; max-width: 250px;">
+              <label>Search Student</label>
+              <input type="text" id="stu-search-input" class="form-input" placeholder="Search name or roll no..." oninput="renderAdminStudents()">
             </div>
             <div class="filter-actions">
               <button class="btn btn-outline btn-sm" onclick="resetStudentFilters()"><i class="fas fa-undo"></i> Reset</button>
@@ -288,6 +293,10 @@
                 <option value="Contract">Contract</option>
                 <option value="MTS">MTS</option>
               </select>
+            </div>
+            <div class="filter-group" style="flex-grow: 1; max-width: 250px;">
+              <label>Search Staff</label>
+              <input type="text" id="staff-search-input" class="form-input" placeholder="Search name, sub, desig..." oninput="renderAdminStaff()">
             </div>
           </div>
           <div class="table-container">
@@ -525,8 +534,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=2.3"></script>
-<script src="js/auth.js?v=2.3"></script>
-<script src="js/admin.js?v=2.3"></script>
+<script src="js/supabase-config.js?v=2.4"></script>
+<script src="js/auth.js?v=2.4"></script>
+<script src="js/admin.js?v=2.4"></script>
 </body>
 </html>

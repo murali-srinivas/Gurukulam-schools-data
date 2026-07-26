@@ -54,8 +54,12 @@ function switchTab(tabName) {
     if (tabName === 'schools') {
         renderSchoolsTable();
     } else if (tabName === 'students') {
+        const searchInput = document.getElementById('stu-search-input');
+        if (searchInput) searchInput.value = '';
         loadAdminStudents();
     } else if (tabName === 'staff') {
+        const searchInput = document.getElementById('staff-search-input');
+        if (searchInput) searchInput.value = '';
         loadAdminStaff();
     } else if (tabName === 'marks') {
         onAdminMarksFilterChange();
@@ -84,12 +88,33 @@ async function loadSchoolsList() {
         populateFilterDropdown('staff-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('admin-staff-school-select', schoolOptions, 'id', 'name');
         populateFilterDropdown('overview-school-select', schoolOptions, 'id', 'name');
+        
+        const searchInput = document.getElementById('overview-school-search');
+        if (searchInput) searchInput.value = '';
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
     } finally {
         hideLoading();
     }
+}
+
+function filterSchoolDropdown() {
+    const searchVal = document.getElementById('overview-school-search').value.toLowerCase();
+    const select = document.getElementById('overview-school-select');
+    
+    select.innerHTML = '<option value="">-- Select a School --</option>';
+    
+    const filtered = allSchools.filter(school => 
+        school.school_name.toLowerCase().includes(searchVal)
+    );
+    
+    filtered.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school.school_name;
+        select.appendChild(option);
+    });
 }
 
 async function loadOverviewData() {
@@ -302,6 +327,47 @@ function togglePassword(btn) {
     }
 }
 
+let adminStudentData = [];
+
+function renderAdminStudents() {
+    const tbody = document.getElementById('admin-students-table');
+    tbody.innerHTML = '';
+    
+    const searchVal = document.getElementById('stu-search-input').value.trim().toLowerCase();
+    
+    const filtered = adminStudentData.filter(student => {
+        if (!searchVal) return true;
+        const school = allSchools.find(s => s.id === student.school_id);
+        const schoolName = school ? school.school_name.toLowerCase() : '';
+        return (
+            student.student_name.toLowerCase().includes(searchVal) ||
+            student.roll_number.toString().toLowerCase().includes(searchVal) ||
+            schoolName.includes(searchVal)
+        );
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
+        return;
+    }
+    
+    filtered.forEach(student => {
+        const school = allSchools.find(s => s.id === student.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${student.roll_number}</td>
+            <td>${student.student_name}</td>
+            <td>${student.gender || '-'}</td>
+            <td>${classDisplayName(student.class_number)}</td>
+            <td>${student.section}</td>
+            <td>${schoolName}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 async function loadAdminStudents() {
     const schoolId = document.getElementById('stu-filter-school').value;
     const classVal = document.getElementById('stu-filter-class').value;
@@ -318,29 +384,8 @@ async function loadAdminStudents() {
         const { data, error } = await query.order('class_number').order('section').order('roll_number');
         if (error) throw error;
         
-        const tbody = document.getElementById('admin-students-table');
-        tbody.innerHTML = '';
-        
-        if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
-            return;
-        }
-        
-        data.forEach(student => {
-            const school = allSchools.find(s => s.id === student.school_id);
-            const schoolName = school ? school.school_name : 'Unknown';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${student.roll_number}</td>
-                <td>${student.student_name}</td>
-                <td>${student.gender || '-'}</td>
-                <td>${classDisplayName(student.class_number)}</td>
-                <td>${student.section}</td>
-                <td>${schoolName}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        adminStudentData = data || [];
+        renderAdminStudents();
         
     } catch (err) {
         console.error(err);
@@ -354,6 +399,8 @@ function resetStudentFilters() {
     document.getElementById('stu-filter-school').value = '';
     document.getElementById('stu-filter-class').value = '';
     document.getElementById('stu-filter-section').value = '';
+    const searchInput = document.getElementById('stu-search-input');
+    if (searchInput) searchInput.value = '';
     loadAdminStudents();
 }
 
@@ -798,6 +845,60 @@ function populateFilterDropdown(selectId, options, valueKey, textKey) {
 // ============================================
 let adminStaffData = [];
 
+function renderAdminStaff() {
+    const tbody = document.getElementById('admin-staff-table');
+    tbody.innerHTML = '';
+    
+    const searchVal = document.getElementById('staff-search-input').value.trim().toLowerCase();
+    
+    const filtered = adminStaffData.filter(s => {
+        if (!searchVal) return true;
+        const school = allSchools.find(sc => sc.id === s.school_id);
+        const schoolName = school ? school.school_name.toLowerCase() : '';
+        return (
+            s.staff_name.toLowerCase().includes(searchVal) ||
+            s.designation.toLowerCase().includes(searchVal) ||
+            s.subject.toLowerCase().includes(searchVal) ||
+            schoolName.includes(searchVal) ||
+            formatQualificationSummary(s).toLowerCase().includes(searchVal)
+        );
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No staff records found.</td></tr>';
+        return;
+    }
+    
+    filtered.forEach(s => {
+        const school = allSchools.find(sc => sc.id === s.school_id);
+        const schoolName = school ? school.school_name : 'Unknown School';
+        
+        let badgeClass = 'badge-info';
+        if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
+        else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
+        else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${s.staff_name}</td>
+            <td>${s.designation}</td>
+            <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
+            <td>${formatQualificationSummary(s)}</td>
+            <td>${s.subject}</td>
+            <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
+            <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
+            <td>${schoolName}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="openAdminStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 async function loadAdminStaff() {
     const schoolId = document.getElementById('staff-filter-school').value;
     const typeVal = document.getElementById('staff-filter-type').value;
@@ -812,42 +913,7 @@ async function loadAdminStaff() {
         if (error) throw error;
         
         adminStaffData = data || [];
-        const tbody = document.getElementById('admin-staff-table');
-        tbody.innerHTML = '';
-        
-        if (adminStaffData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center">No staff records found.</td></tr>';
-            return;
-        }
-        
-        adminStaffData.forEach(s => {
-            const school = allSchools.find(sc => sc.id === s.school_id);
-            const schoolName = school ? school.school_name : 'Unknown School';
-            
-            let badgeClass = 'badge-info';
-            if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
-            else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
-            else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${s.staff_name}</td>
-                <td>${s.designation}</td>
-                <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
-                <td>${formatQualificationSummary(s)}</td>
-                <td>${s.subject}</td>
-                <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
-                <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
-                <td>${schoolName}</td>
-                <td>
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline" onclick="openAdminStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteAdminStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        renderAdminStaff();
     } catch (err) {
         showToast(err.message, 'error');
     } finally {
