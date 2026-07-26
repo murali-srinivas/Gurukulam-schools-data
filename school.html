@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.1">
+  <link rel="stylesheet" href="css/styles.css?v=2.2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -254,9 +254,10 @@
             <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color);">
-                  <th style="padding: 6px; text-align: left; width: 35%; color: var(--text-muted);">Qual</th>
-                  <th style="padding: 6px; text-align: left; width: 45%; color: var(--text-muted);">Subjects</th>
-                  <th style="padding: 6px; text-align: left; width: 20%; color: var(--text-muted);">Marks %</th>
+                  <th style="padding: 6px; text-align: left; width: 25%; color: var(--text-muted);">Qual</th>
+                  <th style="padding: 6px; text-align: left; width: 20%; color: var(--text-muted);">Type</th>
+                  <th style="padding: 6px; text-align: left; width: 40%; color: var(--text-muted);">Subjects</th>
+                  <th style="padding: 6px; text-align: left; width: 15%; color: var(--text-muted);">Marks %</th>
                 </tr>
               </thead>
               <tbody>
@@ -266,13 +267,23 @@
                       <input type="checkbox" id="staff-qual-inter"> Inter
                     </label>
                   </td>
-                  <td style="padding: 6px;" colspan="2"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
+                  <td style="padding: 6px;" colspan="3"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
                 </tr>
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
                   <td style="padding: 6px;">
                     <label class="checkbox-label" style="font-size: 0.8rem;">
                       <input type="checkbox" id="staff-qual-degree" onchange="toggleQualRow(this)"> Degree
                     </label>
+                  </td>
+                  <td style="padding: 6px;">
+                    <select class="form-select form-input-sm" id="staff-qual-degree-type" disabled style="background-color: #1a1a35; color: #fff; padding: 4px 8px;">
+                      <option value="BSc">BSc</option>
+                      <option value="BA">BA</option>
+                      <option value="B.Com">B.Com</option>
+                      <option value="B.Tech">B.Tech</option>
+                      <option value="Vidwan">Vidwan</option>
+                      <option value="Others">Others</option>
+                    </select>
                   </td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-degree-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-degree-marks" placeholder="%" disabled></td>
@@ -283,6 +294,17 @@
                       <input type="checkbox" id="staff-qual-pg" onchange="toggleQualRow(this)"> PG
                     </label>
                   </td>
+                  <td style="padding: 6px;">
+                    <select class="form-select form-input-sm" id="staff-qual-pg-type" disabled style="background-color: #1a1a35; color: #fff; padding: 4px 8px;">
+                      <option value="MSc">MSc</option>
+                      <option value="MA">MA</option>
+                      <option value="MCom">MCom</option>
+                      <option value="MTech">MTech</option>
+                      <option value="Sahitya Ratna">Sahitya Ratna</option>
+                      <option value="MBA">MBA</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pg-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pg-marks" placeholder="%" disabled></td>
                 </tr>
@@ -292,6 +314,7 @@
                       <input type="checkbox" id="staff-qual-bed" onchange="toggleQualRow(this)"> B.Ed
                     </label>
                   </td>
+                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-bed-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-bed-marks" placeholder="%" disabled></td>
                 </tr>
@@ -301,6 +324,7 @@
                       <input type="checkbox" id="staff-qual-pandit" onchange="toggleQualRow(this)"> Pandit Tr.
                     </label>
                   </td>
+                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pandit-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pandit-marks" placeholder="%" disabled></td>
                 </tr>
@@ -310,6 +334,7 @@
                       <input type="checkbox" id="staff-qual-tet1" onchange="toggleQualRow(this)"> TET P1 Qual.
                     </label>
                   </td>
+                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet1-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet1-marks" placeholder="%" disabled></td>
                 </tr>
@@ -319,6 +344,7 @@
                       <input type="checkbox" id="staff-qual-tet2" onchange="toggleQualRow(this)"> TET P2 Qual.
                     </label>
                   </td>
+                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet2-sub" placeholder="Subjects" disabled></td>
                   <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet2-marks" placeholder="%" disabled></td>
                 </tr>
@@ -328,7 +354,7 @@
                       <input type="checkbox" id="staff-qual-others" onchange="toggleQualRow(this)"> Others
                     </label>
                   </td>
-                  <td style="padding: 6px;" colspan="2">
+                  <td style="padding: 6px;" colspan="3">
                     <input type="text" class="form-input form-input-sm" id="staff-qual-others-desc" placeholder="Specify qual & subjects" disabled>
                   </td>
                 </tr>
@@ -360,8 +386,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=2.1"></script>
-<script src="js/auth.js?v=2.1"></script>
-<script src="js/school.js?v=2.1"></script>
+<script src="js/supabase-config.js?v=2.2"></script>
+<script src="js/auth.js?v=2.2"></script>
+<script src="js/school.js?v=2.2"></script>
 </body>
 </html>

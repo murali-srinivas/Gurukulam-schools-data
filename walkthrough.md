@@ -120,8 +120,10 @@ Then open `http://localhost:3000` in your browser.
 * **Grades**: Dropdown option list with A, B, and C groups (replaces marks input and pass/fail calculations).
 
 ### Staff Qualifications
-* **Preset Qualifications**: Inter, Degree, PG, B.Ed, Pandit Training, TET Paper -1 Qualified, TET Paper-2.
-* **Others**: Selection of "Others (with subjects)" dynamically displays a secondary specify field to input any custom qualification and subject details.
+* **Structured Details**: Grid layout to select and enter details (Type, Subjects, and Marks %) for multiple qualifications.
+* **Degree Types**: BSc, BA, B.Com, B.Tech, Vidwan, Others.
+* **PG Types**: MSc, MA, MCom, MTech, Sahitya Ratna, MBA, Others.
+* **Other Options**: Inter, B.Ed, Pandit Training, TET Paper -1 Qualified, TET Paper-2 Qualified, and Others (with custom specify).
 
 ### Access Control
 * **Admin**: Can view, edit, and export data for ALL schools (students, marks, staff)

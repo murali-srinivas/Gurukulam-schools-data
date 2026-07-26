@@ -390,8 +390,14 @@ function toggleQualRow(cb) {
 function formatQualificationSummary(s) {
     const summary = [];
     if (s.qualification_inter) summary.push('Inter');
-    if (s.qualification_degree) summary.push(`Degree (${s.degree_subjects || '-'}: ${s.degree_marks || '-'}%)`);
-    if (s.qualification_pg) summary.push(`PG (${s.pg_subjects || '-'}: ${s.pg_marks || '-'}%)`);
+    if (s.qualification_degree) {
+        const typeStr = s.degree_type ? s.degree_type : 'Degree';
+        summary.push(`${typeStr} (${s.degree_subjects || '-'}: ${s.degree_marks || '-'}%)`);
+    }
+    if (s.qualification_pg) {
+        const typeStr = s.pg_type ? s.pg_type : 'PG';
+        summary.push(`${typeStr} (${s.pg_subjects || '-'}: ${s.pg_marks || '-'}%)`);
+    }
     if (s.qualification_bed) summary.push(`B.Ed (${s.bed_subjects || '-'}: ${s.bed_marks || '-'}%)`);
     if (s.qualification_pandit) summary.push(`Pandit Tr. (${s.pandit_subjects || '-'}: ${s.pandit_marks || '-'}%)`);
     if (s.qualification_tet_p1) summary.push(`TET P1 (${s.tet_p1_subjects || '-'}: ${s.tet_p1_marks || '-'}%)`);
@@ -404,8 +410,8 @@ function formatQualificationSummary(s) {
 function populateQualFormFields(prefix, s = null) {
     const list = [
         { key: 'inter', hasFields: false },
-        { key: 'degree', hasFields: true },
-        { key: 'pg', hasFields: true },
+        { key: 'degree', hasFields: true, hasType: true },
+        { key: 'pg', hasFields: true, hasType: true },
         { key: 'bed', hasFields: true },
         { key: 'pandit', hasFields: true },
         { key: 'tet1', dbKey: 'tet_p1', hasFields: true },
@@ -419,6 +425,19 @@ function populateQualFormFields(prefix, s = null) {
         const dbKeyBool = item.dbKey ? `qualification_${item.dbKey}` : `qualification_${item.key}`;
         const isChecked = s ? !!s[dbKeyBool] : false;
         cb.checked = isChecked;
+        
+        if (item.hasType) {
+            const typeSelect = document.getElementById(`${prefix}-qual-${item.key}-type`);
+            if (isChecked) {
+                typeSelect.removeAttribute('disabled');
+                typeSelect.setAttribute('required', 'true');
+                typeSelect.value = s ? (s[`${item.key}_type`] || typeSelect.options[0].value) : typeSelect.options[0].value;
+            } else {
+                typeSelect.setAttribute('disabled', 'true');
+                typeSelect.removeAttribute('required');
+                typeSelect.value = typeSelect.options[0].value;
+            }
+        }
         
         if (item.hasFields) {
             const subInput = document.getElementById(`${prefix}-qual-${item.key}-sub`);
@@ -467,10 +486,12 @@ function readQualFormFields(prefix) {
         qualification_inter: document.getElementById(`${prefix}-qual-inter`).checked,
         
         qualification_degree: document.getElementById(`${prefix}-qual-degree`).checked,
+        degree_type: document.getElementById(`${prefix}-qual-degree`).checked ? document.getElementById(`${prefix}-qual-degree-type`).value : null,
         degree_subjects: document.getElementById(`${prefix}-qual-degree`).checked ? document.getElementById(`${prefix}-qual-degree-sub`).value.trim() : null,
         degree_marks: document.getElementById(`${prefix}-qual-degree`).checked ? document.getElementById(`${prefix}-qual-degree-marks`).value.trim() : null,
         
         qualification_pg: document.getElementById(`${prefix}-qual-pg`).checked,
+        pg_type: document.getElementById(`${prefix}-qual-pg`).checked ? document.getElementById(`${prefix}-qual-pg-type`).value : null,
         pg_subjects: document.getElementById(`${prefix}-qual-pg`).checked ? document.getElementById(`${prefix}-qual-pg-sub`).value.trim() : null,
         pg_marks: document.getElementById(`${prefix}-qual-pg`).checked ? document.getElementById(`${prefix}-qual-pg-marks`).value.trim() : null,
         
