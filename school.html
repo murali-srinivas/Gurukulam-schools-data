@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.4">
+  <link rel="stylesheet" href="css/styles.css?v=2.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -98,6 +98,10 @@
               <label>Section</label>
               <select id="stu-section" onchange="loadStudentTable()"><option value="A">A</option><option value="B">B</option></select>
             </div>
+            <div class="filter-group" style="flex-grow: 1; max-width: 250px;">
+              <label>Search Student</label>
+              <input type="text" id="stu-search-input" class="form-input" placeholder="Search name or roll no..." oninput="renderStudentTable()">
+            </div>
             <div class="filter-actions">
               <button class="btn btn-primary btn-sm" onclick="saveStudents()">
                 <i class="fas fa-save"></i> Save Students
@@ -131,6 +135,10 @@
             <div class="filter-group">
               <label>Exam</label>
               <select id="marks-exam" onchange="onMarksFilterChange()"><option value="">Select Exam</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+            <div class="filter-group" style="flex-grow: 1; max-width: 250px;">
+              <label>Search Student</label>
+              <input type="text" id="marks-search-input" class="form-input" placeholder="Search name or roll no..." oninput="filterMarksTable()">
             </div>
             <div class="filter-actions">
               <button class="btn btn-primary btn-sm" onclick="loadMarksTable()">
@@ -191,6 +199,12 @@
           </button>
         </div>
         <div class="card">
+          <div class="filter-bar" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
+            <div class="filter-group" style="max-width: 300px; flex-grow: 1;">
+              <label>Search Staff</label>
+              <input type="text" id="staff-search-input" class="form-input" placeholder="Search name, sub, desig..." oninput="renderStaffTable()">
+            </div>
+          </div>
           <div class="table-container standalone">
             <table>
               <thead>
@@ -386,8 +400,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=2.4"></script>
-<script src="js/auth.js?v=2.4"></script>
-<script src="js/school.js?v=2.4"></script>
+<script src="js/supabase-config.js?v=2.5"></script>
+<script src="js/auth.js?v=2.5"></script>
+<script src="js/school.js?v=2.5"></script>
 </body>
 </html>

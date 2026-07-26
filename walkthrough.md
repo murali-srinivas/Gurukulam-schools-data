@@ -130,9 +130,14 @@ Then open `http://localhost:3000` in your browser.
 * **Schools**: Can only view, edit, and export their OWN data
 
 ### Search & Filtering
-* **Search School**: Added a real-time school search bar to filter school list stats.
-* **Search Student**: Added a real-time student search bar to instantly query names/roll numbers.
-* **Search Staff**: Added a real-time staff search bar to instantly query names, subjects, qualifications, or designations.
+* **Admin Dashboard**:
+  * **Search School**: Real-time school stats search filter.
+  * **Search Student**: Real-time student search filter (by name/roll number/school).
+  * **Search Staff**: Real-time staff search filter (by name/designation/subject/school).
+* **School Dashboard**:
+  * **Search Student (Data Entry)**: Real-time filter over active students list.
+  * **Search Student (Marks Entry)**: Real-time filter over active students grid to easily locate specific rows.
+  * **Search Staff**: Real-time filter over school staff list.
 
 ---
 

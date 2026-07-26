@@ -54,11 +54,19 @@ function switchTab(tabName) {
   document.getElementById('page-title').textContent = titles[tabName] || 'Overview';
   
   if (tabName === 'students') {
+    const searchInput = document.getElementById('stu-search-input');
+    if (searchInput) searchInput.value = '';
     loadStudentTable();
   } else if (tabName === 'staff') {
+    const searchInput = document.getElementById('staff-search-input');
+    if (searchInput) searchInput.value = '';
     loadStaffTable();
   } else if (tabName === 'overview') {
     loadOverviewData();
+  } else if (tabName === 'marks') {
+    const searchInput = document.getElementById('marks-search-input');
+    if (searchInput) searchInput.value = '';
+    onMarksFilterChange();
   }
 }
 
@@ -138,6 +146,25 @@ async function loadOverviewData() {
   }
 }
 
+function renderStudentTable() {
+  const searchVal = document.getElementById('stu-search-input').value.trim().toLowerCase();
+  const tbody = document.getElementById('students-table-body');
+  if (!tbody) return;
+  
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(row => {
+    const nameInput = row.querySelector('.student-name');
+    const rollNo = row.cells[0].textContent;
+    const name = nameInput ? nameInput.value.toLowerCase() : '';
+    
+    if (!searchVal || name.includes(searchVal) || rollNo.toLowerCase().includes(searchVal)) {
+      row.classList.remove('hidden');
+    } else {
+      row.classList.add('hidden');
+    }
+  });
+}
+
 async function loadStudentTable() {
   const classNum = document.getElementById('stu-class').value;
   const section = document.getElementById('stu-section').value;
@@ -183,6 +210,9 @@ async function loadStudentTable() {
       `;
       tbody.appendChild(row);
     }
+    
+    const searchInput = document.getElementById('stu-search-input');
+    if (searchInput) searchInput.value = '';
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -367,11 +397,34 @@ async function loadMarksTable() {
     });
     
     document.getElementById('save-marks-btn').disabled = false;
+    
+    const searchInput = document.getElementById('marks-search-input');
+    if (searchInput) searchInput.value = '';
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
     hideLoading();
   }
+}
+
+function filterMarksTable() {
+  const searchVal = document.getElementById('marks-search-input').value.trim().toLowerCase();
+  const tbody = document.getElementById('marks-table-body');
+  if (!tbody) return;
+  
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(row => {
+    const nameCell = row.cells[1];
+    const rollCell = row.cells[0];
+    const name = nameCell ? nameCell.textContent.toLowerCase() : '';
+    const roll = rollCell ? rollCell.textContent.toLowerCase() : '';
+    
+    if (!searchVal || name.includes(searchVal) || roll.toLowerCase().includes(searchVal)) {
+      row.classList.remove('hidden');
+    } else {
+      row.classList.add('hidden');
+    }
+  });
 }
 
 function updateRowResult(row, subjectsStr, examType) {
@@ -734,6 +787,53 @@ async function exportPDF() {
 // ============================================
 let allStaff = [];
 
+function renderStaffTable() {
+  const tbody = document.getElementById('staff-table-body');
+  tbody.innerHTML = '';
+  
+  const searchVal = document.getElementById('staff-search-input').value.trim().toLowerCase();
+  
+  const filtered = allStaff.filter(s => {
+    if (!searchVal) return true;
+    return (
+      s.staff_name.toLowerCase().includes(searchVal) ||
+      s.designation.toLowerCase().includes(searchVal) ||
+      s.subject.toLowerCase().includes(searchVal) ||
+      formatQualificationSummary(s).toLowerCase().includes(searchVal)
+    );
+  });
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No staff records found. Click Add to create one.</td></tr>';
+    return;
+  }
+  
+  filtered.forEach(s => {
+    let badgeClass = 'badge-info';
+    if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
+    else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
+    else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.staff_name}</td>
+      <td>${s.designation}</td>
+      <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
+      <td>${formatQualificationSummary(s)}</td>
+      <td>${s.subject}</td>
+      <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
+      <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline" onclick="openStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 async function loadStaffTable() {
   showLoading();
   try {
@@ -746,38 +846,10 @@ async function loadStaffTable() {
     if (error) throw error;
     
     allStaff = data || [];
-    const tbody = document.getElementById('staff-table-body');
-    tbody.innerHTML = '';
+    renderStaffTable();
     
-    if (allStaff.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center">No staff records found. Click Add to create one.</td></tr>';
-      return;
-    }
-    
-    allStaff.forEach(s => {
-      let badgeClass = 'badge-info';
-      if (s.employment_type === 'Regular') badgeClass = 'badge-pass';
-      else if (s.employment_type === 'Contract') badgeClass = 'badge-warning';
-      else if (s.employment_type === 'MTS') badgeClass = 'badge-primary';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${s.staff_name}</td>
-        <td>${s.designation}</td>
-        <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
-        <td>${formatQualificationSummary(s)}</td>
-        <td>${s.subject}</td>
-        <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
-        <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
-        <td>
-          <div class="btn-group">
-            <button class="btn btn-sm btn-outline" onclick="openStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    const searchInput = document.getElementById('staff-search-input');
+    if (searchInput) searchInput.value = '';
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
