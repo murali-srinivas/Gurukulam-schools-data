@@ -177,7 +177,12 @@ console.log('Supabase REST client initialized for:', SUPABASE_URL);
 // Shared Constants & Utilities
 // ============================================
 
-const EXAM_TYPES = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2', 'MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'];
+const EXAM_TYPES = [
+    'FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2', 
+    'MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test',
+    'Unit-1', 'Unit-2', 'Unit-3', 'Unit-4', 
+    'Quarterly', 'Half Yearly', 'Prefinal'
+];
 const SECTIONS = ['A', 'B'];
 const CLASSES = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
@@ -224,11 +229,15 @@ function getSubjects(classVal, examType = '') {
 
 function getMaxMarks(examType) {
     if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
+    if (['Unit-1', 'Unit-2', 'Unit-3', 'Unit-4'].includes(examType)) return 25;
+    if (['Quarterly', 'Half Yearly', 'Prefinal'].includes(examType)) return 100;
     return examType.startsWith('FA') ? 50 : 100;
 }
 
 function getPassMark(examType, subject) {
     if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
+    if (['Unit-1', 'Unit-2', 'Unit-3', 'Unit-4'].includes(examType)) return 9;
+    if (['Quarterly', 'Half Yearly', 'Prefinal'].includes(examType)) return 35;
     const isFA = examType.startsWith('FA');
     const isHindi = subject === 'Hindi';
     if (isFA) return isHindi ? 10 : 18;
@@ -341,6 +350,7 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
     if (!classSelect || !examSelect) return;
     
     const classVal = classSelect.value;
+    const isInter = classVal && classVal.includes('Inter');
     const allowedForGraded = ['3', '4', '5', '6', '7', '8', '9'].includes(classVal);
     const selectedValue = examSelect.value;
     
@@ -360,8 +370,14 @@ function updateExamDropdown(classSelectId, examSelectId, hasAllOption = false) {
     
     const standardExams = ['FA1', 'FA2', 'FA3', 'FA4', 'SA1', 'SA2'];
     const gradedExams = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'];
+    const interExams = ['Unit-1', 'Unit-2', 'Unit-3', 'Unit-4', 'Quarterly', 'Half Yearly', 'Prefinal'];
     
-    const availableExams = allowedForGraded ? [...standardExams, ...gradedExams] : standardExams;
+    let availableExams = [];
+    if (isInter) {
+        availableExams = interExams;
+    } else {
+        availableExams = allowedForGraded ? [...standardExams, ...gradedExams] : standardExams;
+    }
     
     availableExams.forEach(exam => {
         const opt = document.createElement('option');

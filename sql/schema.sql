@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS exam_marks (
     student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     class_number TEXT NOT NULL,
-    exam_type TEXT NOT NULL CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2','MBLP Exam1','MBLP Exam2','MBLP Exam3','End line test')),
+    exam_type TEXT NOT NULL CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2','MBLP Exam1','MBLP Exam2','MBLP Exam3','End line test','Unit-1','Unit-2','Unit-3','Unit-4','Quarterly','Half Yearly','Prefinal')),
     subject TEXT NOT NULL,
     marks INTEGER,
     pass_fail TEXT,
@@ -116,3 +116,11 @@ CREATE POLICY "Allow all on staff" ON staff
 INSERT INTO schools (school_name, username, password, is_admin)
 VALUES ('System Administrator', 'admin', 'Admin@2024', TRUE)
 ON CONFLICT (username) DO NOTHING;
+
+-- ============================================
+-- MIGRATION: Update exam_type check constraint for Inter classes Unit exams
+-- Run this in Supabase SQL editor if your database is already created:
+-- ============================================
+-- ALTER TABLE exam_marks DROP CONSTRAINT IF EXISTS exam_marks_exam_type_check;
+-- ALTER TABLE exam_marks ADD CONSTRAINT exam_marks_exam_type_check CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2','MBLP Exam1','MBLP Exam2','MBLP Exam3','End line test','Unit-1','Unit-2','Unit-3','Unit-4','Quarterly','Half Yearly','Prefinal'));
+
