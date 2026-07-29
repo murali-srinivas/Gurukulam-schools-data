@@ -641,8 +641,8 @@ async function loadAdminMarks() {
                 const markVal = markRecord ? (isGraded ? markRecord.pass_fail : (markRecord.marks !== null ? markRecord.marks : '')) : '';
                 
                 if (markVal !== '') hasMarks = true;
-                if (!isGraded && markRecord && markRecord.pass_fail === 'Fail') anyFail = true;
-                if (!isGraded && (!markRecord || markRecord.pass_fail === 'Fail')) allPass = false;
+                if (!isGraded && markRecord && !isPassingGrade(markRecord.pass_fail)) anyFail = true;
+                if (!isGraded && (!markRecord || !isPassingGrade(markRecord.pass_fail))) allPass = false;
                 
                 if (isGraded) {
                     html += `
@@ -892,7 +892,7 @@ async function exportAdminExcel() {
                     if (mark) {
                         row[sub] = isGraded ? mark.pass_fail : mark.marks;
                         hasMarks = true;
-                        if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
+                        if (!isGraded && !isPassingGrade(mark.pass_fail)) anyFail = true;
                     } else {
                         row[sub] = '';
                         if (!isGraded) allPass = false;
@@ -910,6 +910,46 @@ async function exportAdminExcel() {
             const worksheet = XLSX.utils.json_to_sheet(reportData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Marks Report");
+            
+            // Calculate Grade Distribution for Excel
+            const dist = {};
+            subjects.forEach(sub => {
+                dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+            });
+            students.forEach(student => {
+                subjects.forEach(sub => {
+                    const m = marks.find(mark => mark && mark.student_id === student.id && mark.subject === sub);
+                    if (m && m.pass_fail) {
+                        let grade = m.pass_fail;
+                        if (grade === 'A') grade = 'Grade-A';
+                        else if (grade === 'B') grade = 'Grade-B';
+                        else if (grade === 'C') grade = 'Grade-C';
+                        else if (grade === 'Pass') grade = 'Grade-C';
+                        else if (grade === 'Fail') grade = 'Grade-D';
+                        
+                        if (dist[sub] && dist[sub][grade] !== undefined) {
+                            dist[sub][grade]++;
+                            dist[sub]['Total']++;
+                        }
+                    }
+                });
+            });
+            
+            const distData = subjects.map(sub => {
+                const sDist = dist[sub];
+                return {
+                    'Subject': sub,
+                    'Grade-A (Excellent)': sDist['Grade-A'],
+                    'Grade-B (Good)': sDist['Grade-B'],
+                    'Grade-C (Satisfactory)': sDist['Grade-C'],
+                    'Grade-D (Needs Improvement)': sDist['Grade-D'],
+                    'Total Graded': sDist['Total']
+                };
+            });
+            
+            const distWorksheet = XLSX.utils.json_to_sheet(distData);
+            XLSX.utils.book_append_sheet(workbook, distWorksheet, "Grade Distribution");
+
             const fileName = `${schoolName.replace(/\s+/g, '_')}_Marks_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
             showToast('Marks export successful', 'success');
@@ -1072,7 +1112,7 @@ async function exportAdminPDF() {
                     if (mark) {
                         row.push(isGraded ? mark.pass_fail : mark.marks);
                         hasMarks = true;
-                        if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
+                        if (!isGraded && !isPassingGrade(mark.pass_fail)) anyFail = true;
                     } else {
                         row.push('-');
                         if (!isGraded) allPass = false;
@@ -1091,6 +1131,61 @@ async function exportAdminPDF() {
                 startY: 28,
                 styles: { fontSize: 8 }
             });
+            
+            // Add a new page for Grade Distribution Summary
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.text('Grade Distribution Summary', 14, 15);
+            doc.setFontSize(10);
+            doc.text(`School: ${schoolName} | Class: ${classDisplayName(classVal)} | Exam: ${examType}`, 14, 22);
+            
+            const dist = {};
+            subjects.forEach(sub => {
+                dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+            });
+            students.forEach(student => {
+                subjects.forEach(sub => {
+                    const m = marks.find(mark => mark && mark.student_id === student.id && mark.subject === sub);
+                    if (m && m.pass_fail) {
+                        let grade = m.pass_fail;
+                        if (grade === 'A') grade = 'Grade-A';
+                        else if (grade === 'B') grade = 'Grade-B';
+                        else if (grade === 'C') grade = 'Grade-C';
+                        else if (grade === 'Pass') grade = 'Grade-C';
+                        else if (grade === 'Fail') grade = 'Grade-D';
+                        
+                        if (dist[sub] && dist[sub][grade] !== undefined) {
+                            dist[sub][grade]++;
+                            dist[sub]['Total']++;
+                        }
+                    }
+                });
+            });
+            
+            const distHead = [['Subject', 'Grade-A (Excellent)', 'Grade-B (Good)', 'Grade-C (Satisfactory)', 'Grade-D (Needs Improvement)', 'Total Graded']];
+            const distBody = subjects.map(sub => {
+                const sDist = dist[sub];
+                const pctA = sDist['Total'] > 0 ? Math.round(sDist['Grade-A']/sDist['Total']*100) : 0;
+                const pctB = sDist['Total'] > 0 ? Math.round(sDist['Grade-B']/sDist['Total']*100) : 0;
+                const pctC = sDist['Total'] > 0 ? Math.round(sDist['Grade-C']/sDist['Total']*100) : 0;
+                const pctD = sDist['Total'] > 0 ? Math.round(sDist['Grade-D']/sDist['Total']*100) : 0;
+                return [
+                    sub,
+                    `${sDist['Grade-A']} (${pctA}%)`,
+                    `${sDist['Grade-B']} (${pctB}%)`,
+                    `${sDist['Grade-C']} (${pctC}%)`,
+                    `${sDist['Grade-D']} (${pctD}%)`,
+                    sDist['Total']
+                ];
+            });
+            
+            doc.autoTable({
+                head: distHead,
+                body: distBody,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            
             doc.save(`${schoolName.replace(/\s+/g, '_')}_Marks_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Marks PDF export successful', 'success');
             
@@ -1292,8 +1387,8 @@ async function generateReport() {
                     const mark = studentMarks.find(m => m.subject === sub);
                     const val = mark ? (isGraded ? mark.pass_fail : (mark.marks !== null ? mark.marks : '')) : '';
                     if (val !== '') hasMarks = true;
-                    if (!isGraded && mark && mark.pass_fail === 'Fail') anyFail = true;
-                    if (!isGraded && (!mark || mark.pass_fail === 'Fail')) allPass = false;
+                    if (!isGraded && mark && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                    if (!isGraded && (!mark || !isPassingGrade(mark.pass_fail))) allPass = false;
                     
                     rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
                 });
@@ -1308,6 +1403,8 @@ async function generateReport() {
             });
             
             html += `</tbody></table></div>`;
+            const distHtml = getGradeDistributionHTML(students, marks, subjects, examType);
+            html += distHtml;
             previewContainer.innerHTML = html;
             
         } else if (type === 'students') {

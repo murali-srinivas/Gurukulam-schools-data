@@ -247,8 +247,32 @@ function getPassMark(examType, subject) {
 function calculatePassFail(marks, examType, subject) {
     if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return null;
     if (marks === null || marks === undefined || marks === '') return null;
-    const passMark = getPassMark(examType, subject);
-    return parseInt(marks) >= passMark ? 'Pass' : 'Fail';
+    
+    const marksVal = parseInt(marks);
+    const maxMarks = getMaxMarks(examType);
+    
+    if (maxMarks === 25) {
+        if (marksVal >= 21) return 'Grade-A';
+        if (marksVal >= 16) return 'Grade-B';
+        if (marksVal >= 9) return 'Grade-C';
+        return 'Grade-D';
+    } else if (maxMarks === 50) {
+        if (marksVal >= 41) return 'Grade-A';
+        if (marksVal >= 31) return 'Grade-B';
+        if (marksVal >= 18) return 'Grade-C';
+        return 'Grade-D';
+    } else { // 100 marks
+        if (marksVal >= 80) return 'Grade-A';
+        if (marksVal >= 51) return 'Grade-B';
+        if (marksVal >= 35) return 'Grade-C';
+        return 'Grade-D';
+    }
+}
+
+function isPassingGrade(grade) {
+    if (!grade) return false;
+    if (grade === 'Grade-D' || grade === 'Fail') return false;
+    return true;
 }
 
 // ============================================
@@ -530,4 +554,102 @@ function readQualFormFields(prefix) {
         qualification_others: document.getElementById(`${prefix}-qual-others`).checked ? document.getElementById(`${prefix}-qual-others-desc`).value.trim() : null
     };
     return data;
+}
+
+function getGradeDistributionHTML(students, marksList, subjects, examType, isStudentMarksFormatMap = false) {
+    if (!students || students.length === 0 || !examType) return '';
+    
+    let flatMarks = [];
+    if (isStudentMarksFormatMap) {
+        students.forEach(s => {
+            const sExams = marksList[s.id] || {};
+            const sExamMarks = sExams[examType] || {};
+            Object.keys(sExamMarks).forEach(sub => {
+                flatMarks.push(sExamMarks[sub]);
+            });
+        });
+    } else {
+        flatMarks = marksList || [];
+    }
+    
+    const dist = {};
+    subjects.forEach(sub => {
+        dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+    });
+    
+    students.forEach(student => {
+        subjects.forEach(sub => {
+            const m = flatMarks.find(mark => mark && mark.student_id === student.id && mark.subject === sub);
+            if (m && m.pass_fail) {
+                let grade = m.pass_fail;
+                if (grade === 'A') grade = 'Grade-A';
+                else if (grade === 'B') grade = 'Grade-B';
+                else if (grade === 'C') grade = 'Grade-C';
+                else if (grade === 'Pass') grade = 'Grade-C';
+                else if (grade === 'Fail') grade = 'Grade-D';
+                
+                if (dist[sub] && dist[sub][grade] !== undefined) {
+                    dist[sub][grade]++;
+                    dist[sub]['Total']++;
+                }
+            }
+        });
+    });
+    
+    let html = `
+        <div class="grade-distribution-card mt-6" style="margin-top: 2rem;">
+            <div class="card-header" style="background: #1e3a8a; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0;">
+                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; color: #ffffff;">
+                    <i class="fas fa-chart-bar"></i> Grade Distribution Summary (${examType})
+                </h3>
+            </div>
+            <div class="table-container" style="border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; overflow-x: auto; background: #ffffff;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Subject</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #15803d;">Grade-A (Excellent)</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1d4ed8;">Grade-B (Good)</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #b45309;">Grade-C (Satisfactory)</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #b91c1c;">Grade-D (Need Improvement)</th>
+                            <th style="padding: 12px 15px; font-weight: 600; background: rgba(0,0,0,0.03); color: #1e293b;">Total Graded</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    subjects.forEach(sub => {
+        const sDist = dist[sub];
+        html += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px 15px; font-weight: 500; color: #334155;">${sub}</td>
+                <td style="padding: 12px 15px;">
+                    <span style="font-weight: 600; color: #15803d;">${sDist['Grade-A']}</span> 
+                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-A']/sDist['Total']*100) : 0}%)</span>
+                </td>
+                <td style="padding: 12px 15px;">
+                    <span style="font-weight: 600; color: #1d4ed8;">${sDist['Grade-B']}</span> 
+                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-B']/sDist['Total']*100) : 0}%)</span>
+                </td>
+                <td style="padding: 12px 15px;">
+                    <span style="font-weight: 600; color: #b45309;">${sDist['Grade-C']}</span> 
+                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-C']/sDist['Total']*100) : 0}%)</span>
+                </td>
+                <td style="padding: 12px 15px;">
+                    <span style="font-weight: 600; color: #b91c1c;">${sDist['Grade-D']}</span> 
+                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-D']/sDist['Total']*100) : 0}%)</span>
+                </td>
+                <td style="padding: 12px 15px; background: rgba(0,0,0,0.01); font-weight: 600; color: #1e293b;">${sDist['Total']}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return html;
 }

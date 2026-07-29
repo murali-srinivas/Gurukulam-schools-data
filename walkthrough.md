@@ -133,8 +133,8 @@ Then open `http://localhost:3000` in your browser.
   * **Manage Students**: Added full Add, Edit, Delete capabilities (via Student Modal).
   * **Manage Staff**: Full Add, Edit, Delete capabilities.
   * **Manage Exam Marks**: Add, Edit (via Marks Sheet), and Delete (added **Delete Marks** button to clear all exam marks for class/section/exam).
-  * **Reports & Export**: Expanded reports to include four modes: **Exam Marks**, **Students List**, **Staff Directory**, and **Schools List** (all supporting Excel and PDF generation, complete with an on-screen preview generator).
-* **Schools**: Can only view, edit, and export their OWN data.
+  * **Reports & Export**: Expanded reports to include four modes: **Exam Marks**, **Students List**, **Staff Directory**, and **Schools List** (all supporting Excel and PDF generation, complete with an on-screen preview generator). Added automatic **Grade Distribution Summaries** (A, B, C, D) for exam marks based on maximum marks (25, 50, 100).
+* **Schools**: Can only view, edit, and export their OWN data. Also displays Grade Distribution summaries for their student reports.
 
 ### Search & Filtering
 * **Admin Dashboard**:

@@ -659,7 +659,7 @@ async function exportExcel() {
               row[`${sub}`] = isGraded ? m.pass_fail : m.marks;
               if (!isGraded) {
                 row[`${sub} Result`] = m.pass_fail;
-                if (m.pass_fail === 'Fail') allPass = false;
+                if (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D') allPass = false;
               }
               anyMark = true;
             } else {
@@ -685,8 +685,54 @@ async function exportExcel() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Report");
     
+    if (exams.length === 1) {
+      const activeExam = exams[0];
+      const dist = {};
+      
+      students.forEach(student => {
+        const subjects = getSubjects(student.class_number, activeExam);
+        const sMarks = marksMap[student.id] || {};
+        const exMarks = sMarks[activeExam] || {};
+        
+        subjects.forEach(sub => {
+          if (!dist[sub]) {
+            dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+          }
+          const m = exMarks[sub];
+          if (m && m.pass_fail) {
+            let grade = m.pass_fail;
+            if (grade === 'A') grade = 'Grade-A';
+            else if (grade === 'B') grade = 'Grade-B';
+            else if (grade === 'C') grade = 'Grade-C';
+            else if (grade === 'Pass') grade = 'Grade-C';
+            else if (grade === 'Fail') grade = 'Grade-D';
+            
+            if (dist[sub][grade] !== undefined) {
+              dist[sub][grade]++;
+              dist[sub]['Total']++;
+            }
+          }
+        });
+      });
+      
+      const distData = Object.keys(dist).map(sub => {
+        const sDist = dist[sub];
+        return {
+          'Subject': sub,
+          'Grade-A (Excellent)': sDist['Grade-A'],
+          'Grade-B (Good)': sDist['Grade-B'],
+          'Grade-C (Satisfactory)': sDist['Grade-C'],
+          'Grade-D (Needs Improvement)': sDist['Grade-D'],
+          'Total Graded': sDist['Total']
+        };
+      });
+      
+      const distWorksheet = XLSX.utils.json_to_sheet(distData);
+      XLSX.utils.book_append_sheet(wb, distWorksheet, "Grade Distribution");
+    }
+    
     const dateStr = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `${currentSchool.school_name.replace(/\\s+/g, '_')}_Report_${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `${currentSchool.school_name.replace(/\s+/g, '_')}_Report_${dateStr}.xlsx`);
     
   } catch (err) {
     showToast(err.message, 'error');
@@ -746,7 +792,7 @@ async function exportPDF() {
             if (m) {
               subStr.push(isGraded ? `${sub}: ${m.pass_fail}` : `${sub}: ${m.marks}`);
               anyMark = true;
-              if (!isGraded && m.pass_fail === 'Fail') allPass = false;
+              if (!isGraded && (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D')) allPass = false;
             }
           });
           
@@ -773,7 +819,69 @@ async function exportPDF() {
       headStyles: { fillColor: [41, 128, 185] }
     });
     
-    doc.save(`${currentSchool.school_name.replace(/\\s+/g, '_')}_Report_${dateStr}.pdf`);
+    if (exams.length === 1) {
+      const activeExam = exams[0];
+      const dist = {};
+      
+      students.forEach(student => {
+        const subjects = getSubjects(student.class_number, activeExam);
+        const sMarks = marksMap[student.id] || {};
+        const exMarks = sMarks[activeExam] || {};
+        
+        subjects.forEach(sub => {
+          if (!dist[sub]) {
+            dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+          }
+          const m = exMarks[sub];
+          if (m && m.pass_fail) {
+            let grade = m.pass_fail;
+            if (grade === 'A') grade = 'Grade-A';
+            else if (grade === 'B') grade = 'Grade-B';
+            else if (grade === 'C') grade = 'Grade-C';
+            else if (grade === 'Pass') grade = 'Grade-C';
+            else if (grade === 'Fail') grade = 'Grade-D';
+            
+            if (dist[sub][grade] !== undefined) {
+              dist[sub][grade]++;
+              dist[sub]['Total']++;
+            }
+          }
+        });
+      });
+      
+      doc.addPage();
+      doc.setFontSize(16);
+      doc.text('Grade Distribution Summary', 14, 15);
+      doc.setFontSize(10);
+      doc.text(`School: ${currentSchool.school_name} | Exam: ${activeExam}`, 14, 22);
+      
+      const distHead = [['Subject', 'Grade-A (Excellent)', 'Grade-B (Good)', 'Grade-C (Satisfactory)', 'Grade-D (Needs Improvement)', 'Total Graded']];
+      const distBody = Object.keys(dist).map(sub => {
+        const sDist = dist[sub];
+        const pctA = sDist['Total'] > 0 ? Math.round(sDist['Grade-A']/sDist['Total']*100) : 0;
+        const pctB = sDist['Total'] > 0 ? Math.round(sDist['Grade-B']/sDist['Total']*100) : 0;
+        const pctC = sDist['Total'] > 0 ? Math.round(sDist['Grade-C']/sDist['Total']*100) : 0;
+        const pctD = sDist['Total'] > 0 ? Math.round(sDist['Grade-D']/sDist['Total']*100) : 0;
+        return [
+          sub,
+          `${sDist['Grade-A']} (${pctA}%)`,
+          `${sDist['Grade-B']} (${pctB}%)`,
+          `${sDist['Grade-C']} (${pctC}%)`,
+          `${sDist['Grade-D']} (${pctD}%)`,
+          sDist['Total']
+        ];
+      });
+      
+      doc.autoTable({
+        head: distHead,
+        body: distBody,
+        startY: 28,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185] }
+      });
+    }
+    
+    doc.save(`${currentSchool.school_name.replace(/\s+/g, '_')}_Report_${dateStr}.pdf`);
     
   } catch (err) {
     showToast(err.message, 'error');
