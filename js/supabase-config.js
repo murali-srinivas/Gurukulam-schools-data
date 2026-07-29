@@ -228,28 +228,34 @@ function getSubjects(classVal, examType = '') {
 }
 
 function getMaxMarks(examType) {
-    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
-    if (['Unit-1', 'Unit-2', 'Unit-3', 'Unit-4'].includes(examType)) return 25;
-    if (['Quarterly', 'Half Yearly', 'Prefinal'].includes(examType)) return 100;
-    return examType.startsWith('FA') ? 50 : 100;
+    if (!examType) return 100;
+    const type = String(examType).toUpperCase();
+    if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return 0;
+    if (['UNIT-1', 'UNIT-2', 'UNIT-3', 'UNIT-4'].includes(type)) return 25;
+    if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 100;
+    return type.startsWith('FA') ? 50 : 100;
 }
 
 function getPassMark(examType, subject) {
-    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return 0;
-    if (['Unit-1', 'Unit-2', 'Unit-3', 'Unit-4'].includes(examType)) return 9;
-    if (['Quarterly', 'Half Yearly', 'Prefinal'].includes(examType)) return 35;
-    const isFA = examType.startsWith('FA');
+    if (!examType) return 35;
+    const type = String(examType).toUpperCase();
+    if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return 0;
+    if (['UNIT-1', 'UNIT-2', 'UNIT-3', 'UNIT-4'].includes(type)) return 9;
+    if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 35;
+    const isFA = type.startsWith('FA');
     const isHindi = subject === 'Hindi';
     if (isFA) return isHindi ? 10 : 18;
     return isHindi ? 20 : 35;
 }
 
 function calculatePassFail(marks, examType, subject) {
-    if (['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType)) return null;
+    if (!examType) return null;
+    const type = String(examType).toUpperCase();
+    if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return null;
     if (marks === null || marks === undefined || marks === '') return null;
     
     const marksVal = parseInt(marks);
-    const maxMarks = getMaxMarks(examType);
+    const maxMarks = getMaxMarks(type);
     
     if (maxMarks === 25) {
         if (marksVal >= 21) return 'Grade-A';
@@ -271,7 +277,8 @@ function calculatePassFail(marks, examType, subject) {
 
 function isPassingGrade(grade) {
     if (!grade) return false;
-    if (grade === 'Grade-D' || grade === 'Fail') return false;
+    const g = String(grade).toUpperCase();
+    if (g === 'GRADE-D' || g === 'FAIL') return false;
     return true;
 }
 
@@ -577,18 +584,28 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
         dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
     });
     
+    const isGraded = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(examType).toUpperCase());
+    
     students.forEach(student => {
         subjects.forEach(sub => {
             const m = flatMarks.find(mark => mark && mark.student_id === student.id && mark.subject === sub);
-            if (m && m.pass_fail) {
-                let grade = m.pass_fail;
-                if (grade === 'A') grade = 'Grade-A';
-                else if (grade === 'B') grade = 'Grade-B';
-                else if (grade === 'C') grade = 'Grade-C';
-                else if (grade === 'Pass') grade = 'Grade-C';
-                else if (grade === 'Fail') grade = 'Grade-D';
+            if (m) {
+                let grade = null;
+                if (isGraded) {
+                    const g = String(m.pass_fail || '').toUpperCase();
+                    if (g === 'A') grade = 'Grade-A';
+                    else if (g === 'B') grade = 'Grade-B';
+                    else if (g === 'C') grade = 'Grade-C';
+                } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
+                    grade = calculatePassFail(m.marks, examType, sub);
+                } else if (m.pass_fail) {
+                    const g = String(m.pass_fail);
+                    if (g === 'Pass') grade = 'Grade-C';
+                    else if (g === 'Fail') grade = 'Grade-D';
+                    else if (g.startsWith('Grade-')) grade = g;
+                }
                 
-                if (dist[sub] && dist[sub][grade] !== undefined) {
+                if (grade && dist[sub] && dist[sub][grade] !== undefined) {
                     dist[sub][grade]++;
                     dist[sub]['Total']++;
                 }

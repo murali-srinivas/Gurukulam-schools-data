@@ -698,16 +698,25 @@ async function exportExcel() {
           if (!dist[sub]) {
             dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
           }
+          const isGradedExcel = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(activeExam).toUpperCase());
           const m = exMarks[sub];
-          if (m && m.pass_fail) {
-            let grade = m.pass_fail;
-            if (grade === 'A') grade = 'Grade-A';
-            else if (grade === 'B') grade = 'Grade-B';
-            else if (grade === 'C') grade = 'Grade-C';
-            else if (grade === 'Pass') grade = 'Grade-C';
-            else if (grade === 'Fail') grade = 'Grade-D';
+          if (m) {
+            let grade = null;
+            if (isGradedExcel) {
+              const g = String(m.pass_fail || '').toUpperCase();
+              if (g === 'A') grade = 'Grade-A';
+              else if (g === 'B') grade = 'Grade-B';
+              else if (g === 'C') grade = 'Grade-C';
+            } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
+              grade = calculatePassFail(m.marks, activeExam, sub);
+            } else if (m.pass_fail) {
+              const g = String(m.pass_fail);
+              if (g === 'Pass') grade = 'Grade-C';
+              else if (g === 'Fail') grade = 'Grade-D';
+              else if (g.startsWith('Grade-')) grade = g;
+            }
             
-            if (dist[sub][grade] !== undefined) {
+            if (grade && dist[sub][grade] !== undefined) {
               dist[sub][grade]++;
               dist[sub]['Total']++;
             }
@@ -832,16 +841,25 @@ async function exportPDF() {
           if (!dist[sub]) {
             dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
           }
+          const isGradedPDF = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(activeExam).toUpperCase());
           const m = exMarks[sub];
-          if (m && m.pass_fail) {
-            let grade = m.pass_fail;
-            if (grade === 'A') grade = 'Grade-A';
-            else if (grade === 'B') grade = 'Grade-B';
-            else if (grade === 'C') grade = 'Grade-C';
-            else if (grade === 'Pass') grade = 'Grade-C';
-            else if (grade === 'Fail') grade = 'Grade-D';
+          if (m) {
+            let grade = null;
+            if (isGradedPDF) {
+              const g = String(m.pass_fail || '').toUpperCase();
+              if (g === 'A') grade = 'Grade-A';
+              else if (g === 'B') grade = 'Grade-B';
+              else if (g === 'C') grade = 'Grade-C';
+            } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
+              grade = calculatePassFail(m.marks, activeExam, sub);
+            } else if (m.pass_fail) {
+              const g = String(m.pass_fail);
+              if (g === 'Pass') grade = 'Grade-C';
+              else if (g === 'Fail') grade = 'Grade-D';
+              else if (g.startsWith('Grade-')) grade = g;
+            }
             
-            if (dist[sub][grade] !== undefined) {
+            if (grade && dist[sub][grade] !== undefined) {
               dist[sub][grade]++;
               dist[sub]['Total']++;
             }
