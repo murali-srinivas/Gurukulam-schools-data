@@ -816,6 +816,15 @@ function onAdminReportTypeChange() {
         sectionSelect.disabled = true;
         examSelect.value = '';
         examSelect.disabled = true;
+    } else if (type === 'schools') {
+        schoolSelect.value = '';
+        schoolSelect.disabled = true;
+        classSelect.value = '';
+        classSelect.disabled = true;
+        sectionSelect.value = '';
+        sectionSelect.disabled = true;
+        examSelect.value = '';
+        examSelect.disabled = true;
     }
 }
 
@@ -972,6 +981,27 @@ async function exportAdminExcel() {
             const fileName = `Staff_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
             showToast('Staff export successful', 'success');
+        } else if (type === 'schools') {
+            if (!allSchools || allSchools.length === 0) {
+                showToast('No schools found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const reportData = allSchools.map(s => ({
+                'School Name': s.school_name,
+                'Username': s.username,
+                'Password': s.password,
+                'Is Admin': s.is_admin ? 'Yes' : 'No',
+                'Created At': s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'
+            }));
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Schools List");
+            const fileName = `Schools_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('Schools export successful', 'success');
         }
     } catch (err) {
         console.error(err);
@@ -1143,6 +1173,31 @@ async function exportAdminPDF() {
             });
             doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Staff PDF export successful', 'success');
+        } else if (type === 'schools') {
+            if (!allSchools || allSchools.length === 0) {
+                showToast('No schools found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const head = [['School Name', 'Username', 'Password', 'Admin Status', 'Registered Date']];
+            const body = allSchools.map(s => [
+                s.school_name,
+                s.username,
+                s.password,
+                s.is_admin ? 'Yes' : 'No',
+                s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'
+            ]);
+            
+            doc.text('Global Schools List Report', 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            doc.save(`Schools_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Schools PDF export successful', 'success');
         }
     } catch (err) {
         console.error(err);
@@ -1342,6 +1397,42 @@ async function generateReport() {
                         <td>${s.employment_type}</td>
                         <td>${s.subject}</td>
                         <td>${formatQualificationSummary(s)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
+        } else if (type === 'schools') {
+            if (!allSchools || allSchools.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No school records found.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School Name</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                                <th>Admin Status</th>
+                                <th>Registered Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            allSchools.forEach(s => {
+                html += `
+                    <tr>
+                        <td>${s.school_name}</td>
+                        <td><code>${s.username}</code></td>
+                        <td><code>${s.password}</code></td>
+                        <td>${s.is_admin ? '<span class="badge badge-pass">Admin</span>' : '<span class="badge badge-info">School</span>'}</td>
+                        <td>${s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'}</td>
                     </tr>
                 `;
             });
