@@ -790,92 +790,189 @@ async function deleteAdminMarks() {
     }
 }
 
+function onAdminReportTypeChange() {
+    const type = document.getElementById('report-filter-type').value;
+    const schoolSelect = document.getElementById('report-filter-school');
+    const classSelect = document.getElementById('report-filter-class');
+    const sectionSelect = document.getElementById('report-filter-section');
+    const examSelect = document.getElementById('report-filter-exam');
+    
+    if (type === 'marks') {
+        schoolSelect.disabled = false;
+        classSelect.disabled = false;
+        sectionSelect.disabled = false;
+        examSelect.disabled = false;
+    } else if (type === 'students') {
+        schoolSelect.disabled = false;
+        classSelect.disabled = false;
+        sectionSelect.disabled = false;
+        examSelect.value = '';
+        examSelect.disabled = true;
+    } else if (type === 'staff') {
+        schoolSelect.disabled = false;
+        classSelect.value = '';
+        classSelect.disabled = true;
+        sectionSelect.value = '';
+        sectionSelect.disabled = true;
+        examSelect.value = '';
+        examSelect.disabled = true;
+    }
+}
+
 async function exportAdminExcel() {
+    const type = document.getElementById('report-filter-type').value;
     const schoolId = document.getElementById('report-filter-school').value;
     const classVal = document.getElementById('report-filter-class').value;
     const sectionVal = document.getElementById('report-filter-section').value;
     const examType = document.getElementById('report-filter-exam').value;
     
-    if (!schoolId || !examType) {
-        showToast('Please select at least School and Exam for report', 'warning');
-        return;
-    }
-    
     showLoading();
     try {
-        let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId);
-        if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
-        if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
-        const { data: students, error: stuError } = await stuQuery.order('class_number').order('section').order('roll_number');
-        if (stuError) throw stuError;
-        
-        if (!students || students.length === 0) {
-            showToast('No students found for export', 'warning');
-            hideLoading();
-            return;
-        }
-        
-        const studentIds = students.map(s => s.id);
-        const { data: marks, error: marksError } = await supabase
-            .from('exam_marks')
-            .select('*')
-            .eq('exam_type', examType)
-            .in('student_id', studentIds);
-            
-        if (marksError) throw marksError;
-        
-        const school = allSchools.find(s => s.id === schoolId);
-        const schoolName = school ? school.school_name : 'Unknown';
-        
-        const reportData = [];
-        
-        students.forEach(student => {
-            const row = {
-                'School': schoolName,
-                'Class': classDisplayName(student.class_number),
-                'Section': student.section,
-                'Roll No': student.roll_number,
-                'Student Name': student.student_name,
-                'Gender': student.gender || ''
-            };
-            
-            const subjects = getSubjects(student.class_number, examType);
-            const studentMarks = marks.filter(m => m.student_id === student.id);
-            const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
-            
-            let anyFail = false;
-            let allPass = true;
-            let hasMarks = false;
-            
-            subjects.forEach(sub => {
-                const mark = studentMarks.find(m => m.subject === sub);
-                if (mark) {
-                    row[sub] = isGraded ? mark.pass_fail : mark.marks;
-                    hasMarks = true;
-                    if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
-                } else {
-                    row[sub] = '';
-                    if (!isGraded) allPass = false;
-                }
-            });
-            
-            if (hasMarks) {
-                row['Result'] = isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete'));
-            } else {
-                row['Result'] = '';
+        if (type === 'marks') {
+            if (!schoolId || !examType) {
+                showToast('Please select at least School and Exam for marks report', 'warning');
+                hideLoading();
+                return;
             }
             
-            reportData.push(row);
-        });
-        
-        const worksheet = XLSX.utils.json_to_sheet(reportData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
-        
-        const fileName = `School_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
-        XLSX.writeFile(workbook, fileName);
-        
-        showToast('Export successful', 'success');
+            let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId);
+            if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            const { data: students, error: stuError } = await stuQuery.order('class_number').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                showToast('No students found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const studentIds = students.map(s => s.id);
+            const { data: marks, error: marksError } = await supabase
+                .from('exam_marks')
+                .select('*')
+                .eq('exam_type', examType)
+                .in('student_id', studentIds);
+                
+            if (marksError) throw marksError;
+            
+            const school = allSchools.find(s => s.id === schoolId);
+            const schoolName = school ? school.school_name : 'Unknown';
+            
+            const reportData = [];
+            students.forEach(student => {
+                const row = {
+                    'School': schoolName,
+                    'Class': classDisplayName(student.class_number),
+                    'Section': student.section,
+                    'Roll No': student.roll_number,
+                    'Student Name': student.student_name,
+                    'Gender': student.gender || ''
+                };
+                
+                const subjects = getSubjects(student.class_number, examType);
+                const studentMarks = marks.filter(m => m.student_id === student.id);
+                const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+                
+                let anyFail = false;
+                let allPass = true;
+                let hasMarks = false;
+                
+                subjects.forEach(sub => {
+                    const mark = studentMarks.find(m => m.subject === sub);
+                    if (mark) {
+                        row[sub] = isGraded ? mark.pass_fail : mark.marks;
+                        hasMarks = true;
+                        if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
+                    } else {
+                        row[sub] = '';
+                        if (!isGraded) allPass = false;
+                    }
+                });
+                
+                if (hasMarks) {
+                    row['Result'] = isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete'));
+                } else {
+                    row['Result'] = '';
+                }
+                reportData.push(row);
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Marks Report");
+            const fileName = `${schoolName.replace(/\s+/g, '_')}_Marks_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('Marks export successful', 'success');
+            
+        } else if (type === 'students') {
+            let stuQuery = supabase.from('students').select('*');
+            if (schoolId) stuQuery = stuQuery.eq('school_id', schoolId);
+            if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('class_number').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                showToast('No students found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const reportData = students.map(student => {
+                const school = allSchools.find(s => s.id === student.school_id);
+                return {
+                    'School': school ? school.school_name : 'Unknown',
+                    'Class': classDisplayName(student.class_number),
+                    'Section': student.section,
+                    'Roll No': student.roll_number,
+                    'Student Name': student.student_name,
+                    'Gender': student.gender || ''
+                };
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Students List");
+            const fileName = `Students_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('Students list export successful', 'success');
+            
+        } else if (type === 'staff') {
+            let staffQuery = supabase.from('staff').select('*');
+            if (schoolId) staffQuery = staffQuery.eq('school_id', schoolId);
+            
+            const { data: staffList, error: staffError } = await staffQuery.order('school_id').order('staff_name');
+            if (staffError) throw staffError;
+            
+            if (!staffList || staffList.length === 0) {
+                showToast('No staff records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const reportData = staffList.map(s => {
+                const school = allSchools.find(sc => sc.id === s.school_id);
+                return {
+                    'School': school ? school.school_name : 'Unknown',
+                    'Staff Name': s.staff_name,
+                    'Designation': s.designation,
+                    'Employment Type': s.employment_type,
+                    'Subject': s.subject,
+                    'Qualifications': formatQualificationSummary(s),
+                    'Joined Service': s.joined_service_date || '-',
+                    'Joined Institution': s.joined_institution_date || '-'
+                };
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Staff Directory");
+            const fileName = `Staff_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('Staff export successful', 'success');
+        }
     } catch (err) {
         console.error(err);
         showToast('Export failed', 'error');
@@ -885,94 +982,376 @@ async function exportAdminExcel() {
 }
 
 async function exportAdminPDF() {
+    const type = document.getElementById('report-filter-type').value;
     const schoolId = document.getElementById('report-filter-school').value;
     const classVal = document.getElementById('report-filter-class').value;
     const sectionVal = document.getElementById('report-filter-section').value;
     const examType = document.getElementById('report-filter-exam').value;
     
-    if (!schoolId || !classVal || !examType) {
-        showToast('Please select School, Class, and Exam for PDF', 'warning');
-        return;
-    }
-    
     showLoading();
     try {
-        let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId).eq('class_number', classVal);
-        if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
-        
-        const { data: students, error: stuError } = await stuQuery.order('section').order('roll_number');
-        if (stuError) throw stuError;
-        
-        if (!students || students.length === 0) {
-            showToast('No students found for export', 'warning');
-            hideLoading();
-            return;
-        }
-        
-        const studentIds = students.map(s => s.id);
-        const { data: marks, error: marksError } = await supabase
-            .from('exam_marks')
-            .select('*')
-            .eq('exam_type', examType)
-            .in('student_id', studentIds);
-            
-        if (marksError) throw marksError;
-        
-        const school = allSchools.find(s => s.id === schoolId);
-        const schoolName = school ? school.school_name : 'Unknown';
-        
-        const subjects = getSubjects(classVal, examType);
-        
-        const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Result']];
-        const body = [];
-        
-        students.forEach(student => {
-            const studentMarks = marks.filter(m => m.student_id === student.id);
-            const row = [student.roll_number, student.student_name, student.section];
-            const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
-            
-            let anyFail = false;
-            let allPass = true;
-            let hasMarks = false;
-            
-            subjects.forEach(sub => {
-                const mark = studentMarks.find(m => m.subject === sub);
-                if (mark) {
-                    row.push(isGraded ? mark.pass_fail : mark.marks);
-                    hasMarks = true;
-                    if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
-                } else {
-                    row.push('-');
-                    if (!isGraded) allPass = false;
-                }
-            });
-            
-            const result = hasMarks ? (isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp'))) : '-';
-            row.push(result);
-            body.push(row);
-        });
-        
         const doc = new jspdf.jsPDF('landscape');
-        
         doc.setFontSize(16);
         doc.text('School Data Portal - Report', 14, 15);
-        
         doc.setFontSize(10);
-        doc.text(`School: ${schoolName} | Class: ${classDisplayName(classVal)} | Exam: ${examType}`, 14, 22);
         
-        doc.autoTable({
-            head: head,
-            body: body,
-            startY: 28,
-            styles: { fontSize: 8 }
-        });
-        
-        doc.save(`School_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-        showToast('Export successful', 'success');
-        
+        if (type === 'marks') {
+            if (!schoolId || !classVal || !examType) {
+                showToast('Please select School, Class, and Exam for marks PDF', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId).eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            const { data: students, error: stuError } = await stuQuery.order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                showToast('No students found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const studentIds = students.map(s => s.id);
+            const { data: marks, error: marksError } = await supabase
+                .from('exam_marks')
+                .select('*')
+                .eq('exam_type', examType)
+                .in('student_id', studentIds);
+            if (marksError) throw marksError;
+            
+            const school = allSchools.find(s => s.id === schoolId);
+            const schoolName = school ? school.school_name : 'Unknown';
+            const subjects = getSubjects(classVal, examType);
+            
+            const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Result']];
+            const body = [];
+            
+            students.forEach(student => {
+                const studentMarks = marks.filter(m => m.student_id === student.id);
+                const row = [student.roll_number, student.student_name, student.section];
+                const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+                
+                let anyFail = false;
+                let allPass = true;
+                let hasMarks = false;
+                
+                subjects.forEach(sub => {
+                    const mark = studentMarks.find(m => m.subject === sub);
+                    if (mark) {
+                        row.push(isGraded ? mark.pass_fail : mark.marks);
+                        hasMarks = true;
+                        if (!isGraded && mark.pass_fail === 'Fail') anyFail = true;
+                    } else {
+                        row.push('-');
+                        if (!isGraded) allPass = false;
+                    }
+                });
+                
+                const result = hasMarks ? (isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp'))) : '-';
+                row.push(result);
+                body.push(row);
+            });
+            
+            doc.text(`School: ${schoolName} | Class: ${classDisplayName(classVal)} | Exam: ${examType}`, 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            doc.save(`${schoolName.replace(/\s+/g, '_')}_Marks_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Marks PDF export successful', 'success');
+            
+        } else if (type === 'students') {
+            let stuQuery = supabase.from('students').select('*');
+            if (schoolId) stuQuery = stuQuery.eq('school_id', schoolId);
+            if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('class_number').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                showToast('No students found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const school = allSchools.find(s => s.id === schoolId);
+            const schoolName = school ? school.school_name : 'All Schools';
+            
+            const head = [['School', 'Class', 'Sec', 'Roll No', 'Student Name', 'Gender']];
+            const body = students.map(student => {
+                const sName = allSchools.find(s => s.id === student.school_id)?.school_name || 'Unknown';
+                return [
+                    sName,
+                    classDisplayName(student.class_number),
+                    student.section,
+                    student.roll_number,
+                    student.student_name,
+                    student.gender || ''
+                ];
+            });
+            
+            doc.text(`School: ${schoolName} | Class: ${classVal ? classDisplayName(classVal) : 'All'} | Section: ${sectionVal || 'All'}`, 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            doc.save(`Students_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Students PDF export successful', 'success');
+            
+        } else if (type === 'staff') {
+            let staffQuery = supabase.from('staff').select('*');
+            if (schoolId) staffQuery = staffQuery.eq('school_id', schoolId);
+            
+            const { data: staffList, error: staffError } = await staffQuery.order('school_id').order('staff_name');
+            if (staffError) throw staffError;
+            
+            if (!staffList || staffList.length === 0) {
+                showToast('No staff records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const school = allSchools.find(s => s.id === schoolId);
+            const schoolName = school ? school.school_name : 'All Schools';
+            
+            const head = [['School', 'Staff Name', 'Designation', 'Type', 'Subject', 'Qualifications']];
+            const body = staffList.map(s => {
+                const sName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
+                return [
+                    sName,
+                    s.staff_name,
+                    s.designation,
+                    s.employment_type,
+                    s.subject,
+                    formatQualificationSummary(s)
+                ];
+            });
+            
+            doc.text(`School: ${schoolName} | Staff Directory Report`, 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Staff PDF export successful', 'success');
+        }
     } catch (err) {
         console.error(err);
         showToast('Export failed', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function generateReport() {
+    const type = document.getElementById('report-filter-type').value;
+    const schoolId = document.getElementById('report-filter-school').value;
+    const classVal = document.getElementById('report-filter-class').value;
+    const sectionVal = document.getElementById('report-filter-section').value;
+    const examType = document.getElementById('report-filter-exam').value;
+    const previewContainer = document.getElementById('report-preview');
+    
+    if (!previewContainer) return;
+    
+    previewContainer.innerHTML = '';
+    
+    showLoading();
+    try {
+        if (type === 'marks') {
+            if (!schoolId || !examType) {
+                previewContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <h4>Configure Filters</h4>
+                        <p>Select at least School and Exam to view marks preview</p>
+                    </div>
+                `;
+                hideLoading();
+                return;
+            }
+            
+            let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId);
+            if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            const { data: students, error: stuError } = await stuQuery.order('class_number').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No student records found matching filters.</div>';
+                hideLoading();
+                return;
+            }
+            
+            const studentIds = students.map(s => s.id);
+            const { data: marks, error: marksError } = await supabase
+                .from('exam_marks')
+                .select('*')
+                .eq('exam_type', examType)
+                .in('student_id', studentIds);
+            if (marksError) throw marksError;
+            
+            const subjects = classVal ? getSubjects(classVal, examType) : ['Telugu', 'English', 'Maths'];
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th>Name</th>
+                                <th>Class</th>
+                                <th>Sec</th>
+                                ${subjects.map(sub => `<th>${sub}</th>`).join('')}
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            students.forEach(student => {
+                const studentMarks = marks.filter(m => m.student_id === student.id);
+                const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+                
+                let anyFail = false;
+                let allPass = true;
+                let hasMarks = false;
+                
+                let rowHtml = `
+                    <tr>
+                        <td>${student.roll_number}</td>
+                        <td>${student.student_name}</td>
+                        <td>${classDisplayName(student.class_number)}</td>
+                        <td>${student.section}</td>
+                `;
+                
+                subjects.forEach(sub => {
+                    const mark = studentMarks.find(m => m.subject === sub);
+                    const val = mark ? (isGraded ? mark.pass_fail : (mark.marks !== null ? mark.marks : '')) : '';
+                    if (val !== '') hasMarks = true;
+                    if (!isGraded && mark && mark.pass_fail === 'Fail') anyFail = true;
+                    if (!isGraded && (!mark || mark.pass_fail === 'Fail')) allPass = false;
+                    
+                    rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
+                });
+                
+                let result = '-';
+                if (hasMarks) {
+                    result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>'));
+                }
+                
+                rowHtml += `<td>${result}</td></tr>`;
+                html += rowHtml;
+            });
+            
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
+            
+        } else if (type === 'students') {
+            let stuQuery = supabase.from('students').select('*');
+            if (schoolId) stuQuery = stuQuery.eq('school_id', schoolId);
+            if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('class_number').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No student records found matching filters.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School</th>
+                                <th>Class</th>
+                                <th>Section</th>
+                                <th>Roll No</th>
+                                <th>Student Name</th>
+                                <th>Gender</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            students.forEach(student => {
+                const schoolName = allSchools.find(s => s.id === student.school_id)?.school_name || 'Unknown';
+                html += `
+                    <tr>
+                        <td>${schoolName}</td>
+                        <td>${classDisplayName(student.class_number)}</td>
+                        <td>${student.section}</td>
+                        <td>${student.roll_number}</td>
+                        <td>${student.student_name}</td>
+                        <td>${student.gender || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
+            
+        } else if (type === 'staff') {
+            let staffQuery = supabase.from('staff').select('*');
+            if (schoolId) staffQuery = staffQuery.eq('school_id', schoolId);
+            
+            const { data: staffList, error: staffError } = await staffQuery.order('school_id').order('staff_name');
+            if (staffError) throw staffError;
+            
+            if (!staffList || staffList.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No staff records found.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School</th>
+                                <th>Name</th>
+                                <th>Designation</th>
+                                <th>Type</th>
+                                <th>Subject</th>
+                                <th>Qualifications</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            staffList.forEach(s => {
+                const schoolName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
+                html += `
+                    <tr>
+                        <td>${schoolName}</td>
+                        <td>${s.staff_name}</td>
+                        <td>${s.designation}</td>
+                        <td>${s.employment_type}</td>
+                        <td>${s.subject}</td>
+                        <td>${formatQualificationSummary(s)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to generate report preview', 'error');
     } finally {
         hideLoading();
     }
