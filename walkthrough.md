@@ -135,6 +135,7 @@ Then open `http://localhost:3000` in your browser.
   * **Manage Exam Marks**: Add, Edit (via Marks Sheet), and Delete (added **Delete Marks** button to clear all exam marks for class/section/exam).
   * **Reports & Export**: Expanded reports to include four modes: **Exam Marks**, **Students List**, **Staff Directory**, and **Schools List** (all supporting Excel and PDF generation, complete with an on-screen preview generator). Added automatic **Grade Distribution Summaries** (A, B, C, D) for exam marks based on maximum marks (25, 50, 100).
 * **Schools**: Can only view, edit, and export their OWN data. Also displays Grade Distribution summaries for their student reports.
+* **Intermediate Subject Layout**: Merged the dual Maths subjects (`Maths-A` and `Maths-B`) for Jr/Sr Inter MPC classes into a single, unified `Maths` subject (worth 25 marks in Unit-1..4 and 100 marks in Quarterly, Half Yearly, and Prefinal exams).
 
 ### Search & Filtering
 * **Admin Dashboard**:

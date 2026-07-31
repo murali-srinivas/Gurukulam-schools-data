@@ -124,3 +124,16 @@ ON CONFLICT (username) DO NOTHING;
 -- ALTER TABLE exam_marks DROP CONSTRAINT IF EXISTS exam_marks_exam_type_check;
 -- ALTER TABLE exam_marks ADD CONSTRAINT exam_marks_exam_type_check CHECK (exam_type IN ('FA1','FA2','FA3','FA4','SA1','SA2','MBLP Exam1','MBLP Exam2','MBLP Exam3','End line test','Unit-1','Unit-2','Unit-3','Unit-4','Quarterly','Half Yearly','Prefinal'));
 
+-- ============================================
+-- MIGRATION: Combine Maths-A and Maths-B into Maths for Inter exams
+-- Run this in Supabase SQL editor to merge existing records:
+-- ============================================
+-- -- 1. If Maths records don't exist for the student/exam, rename Maths-A to Maths
+-- UPDATE exam_marks SET subject = 'Maths' WHERE subject = 'Maths-A';
+-- -- 2. If student has Maths-B marks but no Maths marks, rename Maths-B to Maths
+-- UPDATE exam_marks SET subject = 'Maths' WHERE subject = 'Maths-B' AND NOT EXISTS (
+--     SELECT 1 FROM exam_marks em WHERE em.student_id = exam_marks.student_id AND em.exam_type = exam_marks.exam_type AND em.subject = 'Maths'
+-- );
+-- -- 3. Delete any residual Maths-B or Maths-A records
+-- DELETE FROM exam_marks WHERE subject = 'Maths-B' OR subject = 'Maths-A';
+

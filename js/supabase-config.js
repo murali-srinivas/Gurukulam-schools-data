@@ -209,7 +209,7 @@ function getSubjects(classVal, examType = '') {
     
     const val = String(classVal).toUpperCase();
     if (val.includes('MPC')) {
-        return ['English', 'Second Language', 'Maths-A', 'Maths-B', 'Physics', 'Chemistry'];
+        return ['English', 'Second Language', 'Maths', 'Physics', 'Chemistry'];
     } else if (val.includes('BIPC')) {
         return ['English', 'Second Language', 'Botany', 'Zoology', 'Physics', 'Chemistry'];
     } else if (val.includes('CEC')) {
