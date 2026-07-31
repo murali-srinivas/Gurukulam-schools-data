@@ -341,6 +341,7 @@ async function loadMarksTable() {
             <th>Roll No</th>
             <th>Student Name</th>
             ${subjects.map(sub => `<th>${sub} (Max: ${maxMarks})</th>`).join('')}
+            <th>Total</th>
             <th>Result</th>
           </tr>
         </thead>
@@ -389,6 +390,7 @@ async function loadMarksTable() {
         }
       });
       
+      rowHtml += `<td class="total-cell">-</td>`;
       rowHtml += `<td class="result-cell">-</td>`;
       row.innerHTML = rowHtml;
       tbody.appendChild(row);
@@ -435,6 +437,8 @@ function updateRowResult(row, subjectsStr, examType) {
   let allFilled = true;
   let allPass = true;
   let anyAbsent = false;
+  let totalSum = 0;
+  let allEmpty = true;
   
   inputs.forEach(input => {
     let val = input.value.trim();
@@ -450,6 +454,7 @@ function updateRowResult(row, subjectsStr, examType) {
     } else {
       if (val.toUpperCase() === 'AB') {
         anyAbsent = true;
+        allEmpty = false;
         input.classList.remove('invalid');
         return;
       }
@@ -459,12 +464,19 @@ function updateRowResult(row, subjectsStr, examType) {
         input.classList.add('invalid');
         allFilled = false; 
       } else {
+        allEmpty = false;
+        totalSum += val;
         input.classList.remove('invalid');
         const passMark = getPassMark(examType, subject);
         if (val < passMark) allPass = false;
       }
     }
   });
+  
+  const totalCell = row.querySelector('.total-cell');
+  if (totalCell) {
+    totalCell.textContent = isGraded ? '-' : (allEmpty ? '-' : totalSum);
+  }
   
   const resultCell = row.querySelector('.result-cell');
   if (!allFilled) {
@@ -508,10 +520,18 @@ async function saveMarks() {
     inputs.forEach(inp => { if (inp.value !== '') hasAnyMark = true; });
     
     if (hasAnyMark) {
+      let totalSum = 0;
+      let anyFail = false;
+      let allPass = true;
+      let anyAbsent = false;
+      let allAbsent = true;
+      let allEmpty = true;
+      
       inputs.forEach(inp => {
-        const valStr = inp.value;
+        const valStr = inp.value.trim();
         const sub = inp.dataset.subject;
         if (valStr !== '') {
+          allEmpty = false;
           if (isGraded) {
             upserts.push({
               student_id: studentId,
@@ -520,11 +540,12 @@ async function saveMarks() {
               exam_type: exam,
               subject: sub,
               marks: null,
-              pass_fail: valStr // A, B, or C
+              pass_fail: valStr
             });
           } else {
-            const valUpper = valStr.trim().toUpperCase();
+            const valUpper = valStr.toUpperCase();
             if (valUpper === 'AB') {
+              anyAbsent = true;
               upserts.push({
                 student_id: studentId,
                 school_id: currentSchool.id,
@@ -537,7 +558,11 @@ async function saveMarks() {
             } else {
               const marks = parseFloat(valStr);
               if (!isNaN(marks) && marks >= 0 && marks <= maxMarks) {
+                totalSum += marks;
+                allAbsent = false;
                 const passFail = calculatePassFail(marks, exam, sub);
+                if (passFail === 'Fail' || passFail === 'Grade-D') anyFail = true;
+                
                 upserts.push({
                   student_id: studentId,
                   school_id: currentSchool.id,
@@ -552,8 +577,31 @@ async function saveMarks() {
               }
             }
           }
+        } else {
+          allPass = false;
         }
       });
+      
+      if (!isGraded && !hasInvalid && !allEmpty) {
+        let pf = 'Incomplete';
+        if (anyAbsent && allAbsent) {
+          pf = 'AB';
+        } else if (anyFail) {
+          pf = 'Fail';
+        } else if (allPass) {
+          pf = 'Pass';
+        }
+        
+        upserts.push({
+          student_id: studentId,
+          school_id: currentSchool.id,
+          class_number: classNum,
+          exam_type: exam,
+          subject: 'Total',
+          marks: totalSum,
+          pass_fail: pf
+        });
+      }
     }
   });
   
@@ -674,6 +722,8 @@ async function exportExcel() {
           let allPass = true;
           let anyMark = false;
           let anyAbsent = false;
+          let totalSum = 0;
+          let allEmpty = true;
           const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
           
           subjects.forEach(sub => {
@@ -682,7 +732,12 @@ async function exportExcel() {
               row[`${sub}`] = isGraded ? m.pass_fail : (m.pass_fail === 'AB' ? 'AB' : m.marks);
               if (!isGraded) {
                 row[`${sub} Result`] = m.pass_fail;
-                if (m.pass_fail === 'AB') anyAbsent = true;
+                if (m.pass_fail === 'AB') {
+                  anyAbsent = true;
+                } else if (m.marks !== null) {
+                  totalSum += m.marks;
+                  allEmpty = false;
+                }
                 if (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D') allPass = false;
               }
               anyMark = true;
@@ -694,6 +749,8 @@ async function exportExcel() {
               }
             }
           });
+          
+          row['Total'] = isGraded ? '-' : (allEmpty ? '-' : totalSum);
           
           if (isGraded) {
             row['Overall Result'] = anyMark ? 'Graded' : '-';
@@ -794,7 +851,7 @@ async function exportPDF() {
     const filterText = `Filters: Class ${document.getElementById('report-class').value || 'All'}, Section ${document.getElementById('report-section').value || 'All'}, Exam ${document.getElementById('report-exam').value || 'All'}`;
     doc.text(filterText, 14, 22);
     
-    let tableHead = [['Class', 'Sec', 'Roll', 'Name', 'Exam', 'Subjects...', 'Overall']];
+    let tableHead = [['Class', 'Sec', 'Roll', 'Name', 'Exam', 'Subjects...', 'Total', 'Overall']];
     let tableBody = [];
     
     students.forEach(s => {
@@ -806,6 +863,7 @@ async function exportPDF() {
            s.section,
            s.roll_number,
            s.student_name,
+           '-',
            '-',
            '-',
            '-'
@@ -821,16 +879,24 @@ async function exportPDF() {
           
           const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
           
+          let totalSum = 0;
+          let allEmpty = true;
           subjects.forEach(sub => {
             const m = exMarks[sub];
             if (m) {
               subStr.push(isGraded ? `${sub}: ${m.pass_fail}` : `${sub}: ${m.pass_fail === 'AB' ? 'AB' : m.marks}`);
               anyMark = true;
-              if (m.pass_fail === 'AB') anyAbsent = true;
+              if (m.pass_fail === 'AB') {
+                anyAbsent = true;
+              } else if (m.marks !== null) {
+                totalSum += m.marks;
+                allEmpty = false;
+              }
               if (!isGraded && (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D')) allPass = false;
             }
           });
           
+          let totalVal = isGraded ? '-' : (allEmpty ? '-' : totalSum);
           let overall = anyMark ? (isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (allPass ? 'Pass' : 'Fail'))) : '-';
           
           tableBody.push([
@@ -840,6 +906,7 @@ async function exportPDF() {
             s.student_name,
             ex,
             subStr.join(', '),
+            totalVal,
             overall
           ]);
         });

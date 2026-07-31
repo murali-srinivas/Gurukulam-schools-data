@@ -617,6 +617,7 @@ async function loadAdminMarks() {
                         <th>Roll No</th>
                         <th>Student Name</th>
                         ${subjects.map(sub => `<th>${sub} (${getMaxMarks(examType)})</th>`).join('')}
+                        <th>Total</th>
                         <th>Result</th>
                     </tr>
                 </thead>
@@ -663,7 +664,8 @@ async function loadAdminMarks() {
                             <input type="text" class="marks-input mark-input" 
                                    data-subject="${sub}" 
                                    value="${markVal}" 
-                                   placeholder="Max: ${getMaxMarks(examType)} or AB">
+                                   placeholder="Max: ${getMaxMarks(examType)} or AB"
+                                   oninput="updateAdminRowTotal(this.closest('tr'), '${examType}')">
                         </td>
                     `;
                 }
@@ -684,11 +686,20 @@ async function loadAdminMarks() {
                 }
             }
             
-            html += `<td>${resultHtml}</td></tr>`;
+            html += `<td class="total-cell">-</td><td>${resultHtml}</td></tr>`;
         });
         
         html += `</tbody></table>`;
         container.innerHTML = html;
+        
+        // Calculate totals initially
+        const tbody = document.getElementById('admin-marks-tbody');
+        if (tbody) {
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                updateAdminRowTotal(row, examType);
+            });
+        }
         
     } catch (err) {
         console.error(err);
@@ -714,11 +725,21 @@ async function saveAdminMarks() {
             const studentId = row.dataset.studentid;
             const inputs = row.querySelectorAll('.mark-input');
             
+            let totalSum = 0;
+            let anyFail = false;
+            let allPass = true;
+            let anyAbsent = false;
+            let allAbsent = true;
+            let allEmpty = true;
+            let hasAnyMark = false;
+            
             inputs.forEach(input => {
                 const subject = input.dataset.subject;
-                const markStr = input.value;
+                const markStr = input.value.trim();
                 
-                if (markStr.trim() !== '') {
+                if (markStr !== '') {
+                    hasAnyMark = true;
+                    allEmpty = false;
                     if (isGraded) {
                         upsertData.push({
                             student_id: studentId,
@@ -730,8 +751,9 @@ async function saveAdminMarks() {
                             pass_fail: markStr
                         });
                     } else {
-                        const valUpper = markStr.trim().toUpperCase();
+                        const valUpper = markStr.toUpperCase();
                         if (valUpper === 'AB') {
+                            anyAbsent = true;
                             upsertData.push({
                                 student_id: studentId,
                                 school_id: schoolId,
@@ -749,7 +771,10 @@ async function saveAdminMarks() {
                                 hideLoading();
                                 return;
                             }
+                            totalSum += marksNum;
+                            allAbsent = false;
                             const pf = calculatePassFail(marksNum, examType, subject);
+                            if (pf === 'Fail' || pf === 'Grade-D') anyFail = true;
                             
                             upsertData.push({
                                 student_id: studentId,
@@ -762,8 +787,31 @@ async function saveAdminMarks() {
                             });
                         }
                     }
+                } else {
+                    allPass = false;
                 }
             });
+            
+            if (hasAnyMark && !isGraded && !allEmpty) {
+                let pf = 'Incomplete';
+                if (anyAbsent && allAbsent) {
+                    pf = 'AB';
+                } else if (anyFail) {
+                    pf = 'Fail';
+                } else if (allPass) {
+                    pf = 'Pass';
+                }
+                
+                upsertData.push({
+                    student_id: studentId,
+                    school_id: schoolId,
+                    class_number: classNum,
+                    exam_type: examType,
+                    subject: 'Total',
+                    marks: totalSum,
+                    pass_fail: pf
+                });
+            }
         });
         
         if (upsertData.length > 0) {
@@ -781,6 +829,35 @@ async function saveAdminMarks() {
         showToast('Failed to save marks', 'error');
     } finally {
         hideLoading();
+    }
+}
+
+function updateAdminRowTotal(row, examType) {
+    const inputs = row.querySelectorAll('.mark-input');
+    const maxMarks = getMaxMarks(examType);
+    const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+    
+    let totalSum = 0;
+    let allEmpty = true;
+    
+    inputs.forEach(input => {
+        const val = input.value.trim().toUpperCase();
+        if (val !== '') {
+            if (val !== 'AB') {
+                const mark = parseFloat(val);
+                if (!isNaN(mark) && mark >= 0 && mark <= maxMarks) {
+                    totalSum += mark;
+                    allEmpty = false;
+                }
+            } else {
+                allEmpty = false;
+            }
+        }
+    });
+    
+    const totalCell = row.querySelector('.total-cell');
+    if (totalCell) {
+        totalCell.textContent = isGraded ? '-' : (allEmpty ? '-' : totalSum);
     }
 }
 
@@ -910,19 +987,30 @@ async function exportAdminExcel() {
                 let allPass = true;
                 let hasMarks = false;
                 let anyAbsent = false;
+                let totalSum = 0;
+                let allEmpty = true;
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
                     if (mark) {
                         row[sub] = isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : mark.marks);
                         hasMarks = true;
-                        if (!isGraded && mark.pass_fail === 'AB') anyAbsent = true;
-                        if (!isGraded && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        if (!isGraded) {
+                            if (mark.pass_fail === 'AB') {
+                                anyAbsent = true;
+                            } else if (mark.marks !== null) {
+                                totalSum += mark.marks;
+                                allEmpty = false;
+                            }
+                            if (mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        }
                     } else {
                         row[sub] = '';
                         if (!isGraded) allPass = false;
                     }
                 });
+                
+                row['Total'] = isGraded ? '-' : (allEmpty ? '-' : totalSum);
                 
                 if (hasMarks) {
                     row['Result'] = isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete')));
@@ -1129,7 +1217,7 @@ async function exportAdminPDF() {
             const schoolName = school ? school.school_name : 'Unknown';
             const subjects = getSubjects(classVal, examType);
             
-            const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Result']];
+            const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Total', 'Result']];
             const body = [];
             
             students.forEach(student => {
@@ -1141,21 +1229,32 @@ async function exportAdminPDF() {
                 let allPass = true;
                 let hasMarks = false;
                 let anyAbsent = false;
+                let totalSum = 0;
+                let allEmpty = true;
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
                     if (mark) {
                         row.push(isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : mark.marks));
                         hasMarks = true;
-                        if (!isGraded && mark.pass_fail === 'AB') anyAbsent = true;
-                        if (!isGraded && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        if (!isGraded) {
+                            if (mark.pass_fail === 'AB') {
+                                anyAbsent = true;
+                            } else if (mark.marks !== null) {
+                                totalSum += mark.marks;
+                                allEmpty = false;
+                            }
+                            if (mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        }
                     } else {
                         row.push('-');
                         if (!isGraded) allPass = false;
                     }
                 });
                 
+                const totalVal = isGraded ? '-' : (allEmpty ? '-' : totalSum);
                 const result = hasMarks ? (isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp')))) : '-';
+                row.push(totalVal);
                 row.push(result);
                 body.push(row);
             });
@@ -1406,6 +1505,7 @@ async function generateReport() {
                                 <th>Class</th>
                                 <th>Sec</th>
                                 ${subjects.map(sub => `<th>${sub}</th>`).join('')}
+                                <th>Total</th>
                                 <th>Result</th>
                             </tr>
                         </thead>
@@ -1420,6 +1520,8 @@ async function generateReport() {
                 let allPass = true;
                 let hasMarks = false;
                 let anyAbsent = false;
+                let totalSum = 0;
+                let allEmpty = true;
                 
                 let rowHtml = `
                     <tr>
@@ -1433,19 +1535,27 @@ async function generateReport() {
                     const mark = studentMarks.find(m => m.subject === sub);
                     const val = mark ? (isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : (mark.marks !== null ? mark.marks : ''))) : '';
                     if (val !== '') hasMarks = true;
-                    if (!isGraded && mark && mark.pass_fail === 'AB') anyAbsent = true;
-                    if (!isGraded && mark && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                    if (!isGraded) {
+                        if (mark && mark.pass_fail === 'AB') {
+                            anyAbsent = true;
+                        } else if (mark && mark.marks !== null) {
+                            totalSum += mark.marks;
+                            allEmpty = false;
+                        }
+                        if (mark && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                    }
                     if (!isGraded && (!mark || !isPassingGrade(mark.pass_fail))) allPass = false;
                     
                     rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
                 });
                 
+                const totalVal = isGraded ? '-' : (allEmpty ? '-' : totalSum);
                 let result = '-';
                 if (hasMarks) {
                     result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyAbsent ? '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>')));
                 }
                 
-                rowHtml += `<td>${result}</td></tr>`;
+                rowHtml += `<td>${totalVal}</td><td>${result}</td></tr>`;
                 html += rowHtml;
             });
             
