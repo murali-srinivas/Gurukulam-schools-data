@@ -204,6 +204,9 @@ function getSubjects(classVal, examType = '') {
         if (num >= 3 && num <= 5) {
             return ['Telugu', 'English', 'Maths', 'EVS'];
         }
+        if (num >= 8 && num <= 10) {
+            return ['Telugu', 'Hindi', 'English', 'Maths', 'PS', 'NS', 'Social'];
+        }
         return ['Telugu', 'Hindi', 'English', 'Maths', 'Science', 'Social'];
     }
     
@@ -227,12 +230,18 @@ function getSubjects(classVal, examType = '') {
     return ['Telugu', 'Hindi', 'English', 'Maths', 'Science', 'Social'];
 }
 
-function getMaxMarks(examType) {
+function getMaxMarks(examType, subject = '', classVal = '') {
     if (!examType) return 100;
     const type = String(examType).toUpperCase();
     if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return 0;
     if (['UNIT-1', 'UNIT-2', 'UNIT-3', 'UNIT-4'].includes(type)) return 25;
     if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 100;
+    
+    // PS and NS max marks is 50 in SA1/SA2 for 10th class
+    if (['SA1', 'SA2'].includes(type) && ['PS', 'NS'].includes(subject) && String(classVal).includes('10')) {
+        return 50;
+    }
+    
     return type.startsWith('FA') ? 50 : 100;
 }
 
@@ -244,34 +253,40 @@ function getPassMark(examType, subject) {
     if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 35;
     const isFA = type.startsWith('FA');
     const isHindi = subject === 'Hindi';
+    
+    // PS and NS in SA1/SA2: if max marks is 50, pass mark is 18 (same as FA where max marks is 50)
+    if (['SA1', 'SA2'].includes(type) && ['PS', 'NS'].includes(subject)) {
+        return 18;
+    }
+    
     if (isFA) return isHindi ? 10 : 18;
     return isHindi ? 20 : 35;
 }
 
-function calculatePassFail(marks, examType, subject) {
+function calculatePassFail(marks, examType, subject, classVal = '') {
     if (!examType) return null;
     const type = String(examType).toUpperCase();
     if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return null;
     if (marks === null || marks === undefined || marks === '') return null;
     
     const marksVal = parseInt(marks);
-    const maxMarks = getMaxMarks(type);
+    const maxMarks = getMaxMarks(type, subject, classVal);
+    const passMark = getPassMark(type, subject);
+    
+    if (marksVal < passMark) return 'Grade-D';
     
     if (maxMarks === 25) {
         if (marksVal >= 21) return 'Grade-A';
         if (marksVal >= 16) return 'Grade-B';
-        if (marksVal >= 9) return 'Grade-C';
-        return 'Grade-D';
+        return 'Grade-C';
     } else if (maxMarks === 50) {
         if (marksVal >= 41) return 'Grade-A';
         if (marksVal >= 31) return 'Grade-B';
-        if (marksVal >= 18) return 'Grade-C';
-        return 'Grade-D';
+        return 'Grade-C';
     } else { // 100 marks
         if (marksVal >= 80) return 'Grade-A';
         if (marksVal >= 51) return 'Grade-B';
-        if (marksVal >= 35) return 'Grade-C';
-        return 'Grade-D';
+        return 'Grade-C';
     }
 }
 
@@ -609,7 +624,7 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
                 } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
                     const marksVal = parseFloat(m.marks);
                     if (!isNaN(marksVal)) {
-                        grade = calculatePassFail(marksVal, examType, sub);
+                        grade = calculatePassFail(marksVal, examType, sub, student.class_number);
                         dist[sub]['sumMarks'] += marksVal;
                         dist[sub]['countMarks']++;
                         if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
@@ -669,7 +684,8 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
         
         if (!isGraded && sDist['countMarks'] > 0) {
             const avg = sDist['sumMarks'] / sDist['countMarks'];
-            const maxMarks = getMaxMarks(examType);
+            const classVal = students[0] ? students[0].class_number : '';
+            const maxMarks = getMaxMarks(examType, sub, classVal);
             const avgPct = Math.round((avg / maxMarks) * 100);
             avgStr = `${avg.toFixed(1)} / ${maxMarks} (${avgPct}%)`;
             highLowStr = `${sDist['highestMark']} / ${sDist['lowestMark']}`;

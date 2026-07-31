@@ -616,7 +616,7 @@ async function loadAdminMarks() {
                     <tr>
                         <th>Roll No</th>
                         <th>Student Name</th>
-                        ${subjects.map(sub => `<th>${sub} (${getMaxMarks(examType)})</th>`).join('')}
+                        ${subjects.map(sub => `<th>${sub} (${getMaxMarks(examType, sub, classNum)})</th>`).join('')}
                         <th>Total</th>
                         <th>Result</th>
                     </tr>
@@ -628,7 +628,7 @@ async function loadAdminMarks() {
             const studentMarks = marksData.filter(m => m.student_id === student.id) || [];
             const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
             
-            html += `<tr data-studentid="${student.id}">
+            html += `<tr data-studentid="${student.id}" data-class="${classNum}">
                 <td>${student.roll_number}</td>
                 <td>${student.student_name}</td>
             `;
@@ -664,7 +664,7 @@ async function loadAdminMarks() {
                             <input type="text" class="marks-input mark-input" 
                                    data-subject="${sub}" 
                                    value="${markVal}" 
-                                   placeholder="Max: ${getMaxMarks(examType)} or AB"
+                                   placeholder="Max: ${getMaxMarks(examType, sub, classNum)} or AB"
                                    oninput="updateAdminRowTotal(this.closest('tr'), '${examType}')">
                         </td>
                     `;
@@ -765,7 +765,7 @@ async function saveAdminMarks() {
                             });
                         } else {
                             const marksNum = parseFloat(markStr);
-                            const maxMarks = getMaxMarks(examType);
+                            const maxMarks = getMaxMarks(examType, subject, classNum);
                             if (isNaN(marksNum) || marksNum < 0 || marksNum > maxMarks) {
                                 showToast(`Invalid marks entered. Must be between 0 and ${maxMarks}, or AB.`, 'error');
                                 hideLoading();
@@ -773,7 +773,7 @@ async function saveAdminMarks() {
                             }
                             totalSum += marksNum;
                             allAbsent = false;
-                            const pf = calculatePassFail(marksNum, examType, subject);
+                            const pf = calculatePassFail(marksNum, examType, subject, classNum);
                             if (pf === 'Fail' || pf === 'Grade-D') anyFail = true;
                             
                             upsertData.push({
@@ -834,14 +834,16 @@ async function saveAdminMarks() {
 
 function updateAdminRowTotal(row, examType) {
     const inputs = row.querySelectorAll('.mark-input');
-    const maxMarks = getMaxMarks(examType);
     const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+    const classVal = row.dataset.class;
     
     let totalSum = 0;
     let allEmpty = true;
     
     inputs.forEach(input => {
         const val = input.value.trim().toUpperCase();
+        const subject = input.dataset.subject;
+        const maxMarks = getMaxMarks(examType, subject, classVal);
         if (val !== '') {
             if (val !== 'AB') {
                 const mark = parseFloat(val);
@@ -1088,7 +1090,7 @@ async function exportAdminExcel() {
                 
                 if (!isGradedExcel && sDist['countMarks'] > 0) {
                     const avg = sDist['sumMarks'] / sDist['countMarks'];
-                    const maxMarks = getMaxMarks(examType);
+                    const maxMarks = getMaxMarks(examType, sub, classVal);
                     avgMarks = avg.toFixed(2);
                     avgPercent = `${Math.round((avg / maxMarks) * 100)}%`;
                     highest = sDist['highestMark'];
@@ -1379,7 +1381,7 @@ async function exportAdminPDF() {
                 
                 if (!isGradedPDF && sDist['countMarks'] > 0) {
                     const avg = sDist['sumMarks'] / sDist['countMarks'];
-                    const maxMarks = getMaxMarks(examType);
+                    const maxMarks = getMaxMarks(examType, sub, classVal);
                     const avgPct = Math.round((avg / maxMarks) * 100);
                     avgStr = `${avg.toFixed(1)} / ${maxMarks} (${avgPct}%)`;
                     highLowStr = `${sDist['highestMark']} / ${sDist['lowestMark']}`;

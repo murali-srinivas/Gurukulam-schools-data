@@ -150,3 +150,45 @@ ON CONFLICT (username) DO NOTHING;
 -- -- 3. Delete any residual Botany or Zoology records
 -- DELETE FROM exam_marks WHERE subject = 'Botany' OR subject = 'Zoology';
 
+-- ============================================
+-- MIGRATION: Split Science into PS and NS for 8th, 9th, and 10th classes
+-- Run this in Supabase SQL editor to migrate existing records:
+-- ============================================
+-- -- 1. Create PS records from existing Science records for classes 8, 9, 10
+-- INSERT INTO exam_marks (student_id, school_id, class_number, exam_type, subject, marks, pass_fail)
+-- SELECT student_id, school_id, class_number, exam_type, 'PS', 
+--        CASE 
+--             WHEN exam_type IN ('SA1', 'SA2') AND class_number = '10' AND marks IS NOT NULL THEN (marks / 2)
+--             ELSE marks 
+--        END,
+--        CASE 
+--             WHEN exam_type IN ('SA1', 'SA2') AND class_number = '10' AND marks IS NOT NULL THEN 
+--                  -- Recalculate pass_fail status for PS out of 50 marks (pass mark 18)
+--                  CASE WHEN (marks / 2) >= 18 THEN 'Grade-C' ELSE 'Grade-D' END
+--             ELSE pass_fail
+--        END
+-- FROM exam_marks 
+-- WHERE subject = 'Science' AND class_number IN ('8', '9', '10')
+-- ON CONFLICT (student_id, exam_type, subject) DO NOTHING;
+--
+-- -- 2. Create NS records from existing Science records for classes 8, 9, 10
+-- INSERT INTO exam_marks (student_id, school_id, class_number, exam_type, subject, marks, pass_fail)
+-- SELECT student_id, school_id, class_number, exam_type, 'NS', 
+--        CASE 
+--             WHEN exam_type IN ('SA1', 'SA2') AND class_number = '10' AND marks IS NOT NULL THEN (marks / 2)
+--             ELSE marks 
+--        END,
+--        CASE 
+--             WHEN exam_type IN ('SA1', 'SA2') AND class_number = '10' AND marks IS NOT NULL THEN 
+--                  -- Recalculate pass_fail status for NS out of 50 marks (pass mark 18)
+--                  CASE WHEN (marks / 2) >= 18 THEN 'Grade-C' ELSE 'Grade-D' END
+--             ELSE pass_fail
+--        END
+-- FROM exam_marks 
+-- WHERE subject = 'Science' AND class_number IN ('8', '9', '10')
+-- ON CONFLICT (student_id, exam_type, subject) DO NOTHING;
+--
+-- -- 3. Delete old Science records for classes 8, 9, 10
+-- DELETE FROM exam_marks WHERE subject = 'Science' AND class_number IN ('8', '9', '10');
+
+

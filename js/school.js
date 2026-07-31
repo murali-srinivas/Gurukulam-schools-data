@@ -340,7 +340,7 @@ async function loadMarksTable() {
           <tr>
             <th>Roll No</th>
             <th>Student Name</th>
-            ${subjects.map(sub => `<th>${sub} (Max: ${maxMarks})</th>`).join('')}
+            ${subjects.map(sub => `<th>${sub} (Max: ${getMaxMarks(exam, sub, classNum)})</th>`).join('')}
             <th>Total</th>
             <th>Result</th>
           </tr>
@@ -356,6 +356,7 @@ async function loadMarksTable() {
     students.forEach(s => {
       const row = document.createElement('tr');
       row.dataset.studentId = s.id;
+      row.dataset.class = classNum;
       
       let rowHtml = `
         <td>${s.roll_number}</td>
@@ -384,7 +385,7 @@ async function loadMarksTable() {
         } else {
           rowHtml += `
             <td>
-              <input type="text" class="table-input marks-input" data-subject="${sub}" value="${val}" placeholder="Max: ${maxMarks} or AB" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
+              <input type="text" class="table-input marks-input" data-subject="${sub}" value="${val}" placeholder="Max: ${getMaxMarks(exam, sub, classNum)} or AB" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
             </td>
           `;
         }
@@ -431,8 +432,8 @@ function filterMarksTable() {
 
 function updateRowResult(row, subjectsStr, examType) {
   const inputs = row.querySelectorAll('.marks-input');
-  const maxMarks = getMaxMarks(examType);
   const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+  const classVal = row.dataset.class;
   
   let allFilled = true;
   let allPass = true;
@@ -443,6 +444,7 @@ function updateRowResult(row, subjectsStr, examType) {
   inputs.forEach(input => {
     let val = input.value.trim();
     const subject = input.dataset.subject;
+    const maxMarks = getMaxMarks(examType, subject, classVal);
     if (val === '') {
       allFilled = false;
       input.classList.remove('invalid');
@@ -506,7 +508,6 @@ async function saveMarks() {
   if (!tbody) return;
   
   const rows = tbody.querySelectorAll('tr');
-  const maxMarks = getMaxMarks(exam);
   const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(exam);
   
   const upserts = [];
@@ -532,6 +533,7 @@ async function saveMarks() {
         const sub = inp.dataset.subject;
         if (valStr !== '') {
           allEmpty = false;
+          const maxMarksVal = getMaxMarks(exam, sub, classNum);
           if (isGraded) {
             upserts.push({
               student_id: studentId,
@@ -557,10 +559,10 @@ async function saveMarks() {
               });
             } else {
               const marks = parseFloat(valStr);
-              if (!isNaN(marks) && marks >= 0 && marks <= maxMarks) {
+              if (!isNaN(marks) && marks >= 0 && marks <= maxMarksVal) {
                 totalSum += marks;
                 allAbsent = false;
-                const passFail = calculatePassFail(marks, exam, sub);
+                const passFail = calculatePassFail(marks, exam, sub, classNum);
                 if (passFail === 'Fail' || passFail === 'Grade-D') anyFail = true;
                 
                 upserts.push({
@@ -801,7 +803,7 @@ async function exportExcel() {
             } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
               const marksVal = parseFloat(m.marks);
               if (!isNaN(marksVal)) {
-                grade = calculatePassFail(marksVal, activeExam, sub);
+                grade = calculatePassFail(marksVal, activeExam, sub, student.class_number);
                 dist[sub]['sumMarks'] += marksVal;
                 dist[sub]['countMarks']++;
                 if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
@@ -836,7 +838,7 @@ async function exportExcel() {
         
         if (!isGradedExcel && sDist['countMarks'] > 0) {
             const avg = sDist['sumMarks'] / sDist['countMarks'];
-            const maxMarks = getMaxMarks(activeExam);
+            const maxMarks = getMaxMarks(activeExam, sub, students[0] ? students[0].class_number : '');
             avgMarks = avg.toFixed(2);
             avgPercent = `${Math.round((avg / maxMarks) * 100)}%`;
             highest = sDist['highestMark'];
@@ -999,7 +1001,7 @@ async function exportPDF() {
             } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
               const marksVal = parseFloat(m.marks);
               if (!isNaN(marksVal)) {
-                grade = calculatePassFail(marksVal, activeExam, sub);
+                grade = calculatePassFail(marksVal, activeExam, sub, student.class_number);
                 dist[sub]['sumMarks'] += marksVal;
                 dist[sub]['countMarks']++;
                 if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
@@ -1039,7 +1041,7 @@ async function exportPDF() {
         
         if (!isGradedPDF && sDist['countMarks'] > 0) {
             const avg = sDist['sumMarks'] / sDist['countMarks'];
-            const maxMarks = getMaxMarks(activeExam);
+            const maxMarks = getMaxMarks(activeExam, sub, students[0] ? students[0].class_number : '');
             const avgPct = Math.round((avg / maxMarks) * 100);
             avgStr = `${avg.toFixed(1)} / ${maxMarks} (${avgPct}%)`;
             highLowStr = `${sDist['highestMark']} / ${sDist['lowestMark']}`;
