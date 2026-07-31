@@ -469,7 +469,7 @@ function updateRowResult(row, subjectsStr, examType) {
         allEmpty = false;
         totalSum += val;
         input.classList.remove('invalid');
-        const passMark = getPassMark(examType, subject);
+        const passMark = getPassMark(examType, subject, classVal);
         if (val < passMark) allPass = false;
       }
     }

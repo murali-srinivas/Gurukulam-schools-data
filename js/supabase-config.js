@@ -245,11 +245,24 @@ function getMaxMarks(examType, subject = '', classVal = '') {
     return type.startsWith('FA') ? 50 : 100;
 }
 
-function getPassMark(examType, subject) {
+function getPassMark(examType, subject, classVal = '') {
     if (!examType) return 35;
     const type = String(examType).toUpperCase();
     if (['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(type)) return 0;
     if (['UNIT-1', 'UNIT-2', 'UNIT-3', 'UNIT-4'].includes(type)) return 9;
+    
+    const numClass = parseInt(classVal);
+    const is6to10 = !isNaN(numClass) && numClass >= 6 && numClass <= 10;
+    
+    if (is6to10 && subject === 'Hindi') {
+        if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL', 'SA1', 'SA2'].includes(type)) {
+            return 20;
+        }
+        if (type.startsWith('FA')) {
+            return 10;
+        }
+    }
+    
     if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 35;
     const isFA = type.startsWith('FA');
     const isHindi = subject === 'Hindi';
@@ -271,7 +284,7 @@ function calculatePassFail(marks, examType, subject, classVal = '') {
     
     const marksVal = parseInt(marks);
     const maxMarks = getMaxMarks(type, subject, classVal);
-    const passMark = getPassMark(type, subject);
+    const passMark = getPassMark(type, subject, classVal);
     
     if (marksVal < passMark) return 'Grade-D';
     
