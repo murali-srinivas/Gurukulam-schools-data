@@ -137,3 +137,16 @@ ON CONFLICT (username) DO NOTHING;
 -- -- 3. Delete any residual Maths-B or Maths-A records
 -- DELETE FROM exam_marks WHERE subject = 'Maths-B' OR subject = 'Maths-A';
 
+-- ============================================
+-- MIGRATION: Combine Botany and Zoology into Biology for Inter BiPC exams
+-- Run this in Supabase SQL editor to merge existing records:
+-- ============================================
+-- -- 1. If Biology records don't exist for the student/exam, rename Botany to Biology
+-- UPDATE exam_marks SET subject = 'Biology' WHERE subject = 'Botany';
+-- -- 2. If student has Zoology marks but no Biology marks, rename Zoology to Biology
+-- UPDATE exam_marks SET subject = 'Biology' WHERE subject = 'Zoology' AND NOT EXISTS (
+--     SELECT 1 FROM exam_marks em WHERE em.student_id = exam_marks.student_id AND em.exam_type = exam_marks.exam_type AND em.subject = 'Biology'
+-- );
+-- -- 3. Delete any residual Botany or Zoology records
+-- DELETE FROM exam_marks WHERE subject = 'Botany' OR subject = 'Zoology';
+

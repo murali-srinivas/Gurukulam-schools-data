@@ -211,7 +211,7 @@ function getSubjects(classVal, examType = '') {
     if (val.includes('MPC')) {
         return ['English', 'Second Language', 'Maths', 'Physics', 'Chemistry'];
     } else if (val.includes('BIPC')) {
-        return ['English', 'Second Language', 'Botany', 'Zoology', 'Physics', 'Chemistry'];
+        return ['English', 'Second Language', 'Biology', 'Physics', 'Chemistry'];
     } else if (val.includes('CEC')) {
         return ['English', 'Second Language', 'Commerce', 'Economics', 'Civics'];
     } else if (val.includes('HEC')) {
