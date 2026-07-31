@@ -367,7 +367,7 @@ async function loadMarksTable() {
       
       subjects.forEach(sub => {
         const m = sMarks[sub];
-        const val = m ? (isGraded ? m.pass_fail : (m.marks !== null ? m.marks : '')) : '';
+        const val = m ? (isGraded ? m.pass_fail : (m.pass_fail === 'AB' ? 'AB' : (m.marks !== null ? m.marks : ''))) : '';
         
         if (isGraded) {
           rowHtml += `
@@ -383,7 +383,7 @@ async function loadMarksTable() {
         } else {
           rowHtml += `
             <td>
-              <input type="number" class="table-input marks-input" data-subject="${sub}" value="${val}" min="0" max="${maxMarks}" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
+              <input type="text" class="table-input marks-input" data-subject="${sub}" value="${val}" placeholder="Max: ${maxMarks} or AB" oninput="updateRowResult(this.closest('tr'), '${JSON.stringify(subjects).replace(/"/g, '&quot;')}', '${exam}')">
             </td>
           `;
         }
@@ -434,9 +434,10 @@ function updateRowResult(row, subjectsStr, examType) {
   
   let allFilled = true;
   let allPass = true;
+  let anyAbsent = false;
   
   inputs.forEach(input => {
-    let val = input.value;
+    let val = input.value.trim();
     const subject = input.dataset.subject;
     if (val === '') {
       allFilled = false;
@@ -447,8 +448,14 @@ function updateRowResult(row, subjectsStr, examType) {
     if (isGraded) {
       input.classList.remove('invalid');
     } else {
+      if (val.toUpperCase() === 'AB') {
+        anyAbsent = true;
+        input.classList.remove('invalid');
+        return;
+      }
+      
       val = parseInt(val);
-      if (val < 0 || val > maxMarks) {
+      if (isNaN(val) || val < 0 || val > maxMarks) {
         input.classList.add('invalid');
         allFilled = false; 
       } else {
@@ -465,6 +472,8 @@ function updateRowResult(row, subjectsStr, examType) {
   } else {
     if (isGraded) {
       resultCell.innerHTML = '<span class="badge badge-pass">Graded</span>';
+    } else if (anyAbsent) {
+      resultCell.innerHTML = '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>';
     } else {
       if (allPass) {
         resultCell.innerHTML = '<span class="badge badge-pass">Pass</span>';
@@ -514,20 +523,33 @@ async function saveMarks() {
               pass_fail: valStr // A, B, or C
             });
           } else {
-            const marks = parseFloat(valStr);
-            if (marks >= 0 && marks <= maxMarks) {
-              const passFail = calculatePassFail(marks, exam, sub);
+            const valUpper = valStr.trim().toUpperCase();
+            if (valUpper === 'AB') {
               upserts.push({
                 student_id: studentId,
                 school_id: currentSchool.id,
                 class_number: classNum,
                 exam_type: exam,
                 subject: sub,
-                marks: marks,
-                pass_fail: passFail
+                marks: null,
+                pass_fail: 'AB'
               });
             } else {
-              hasInvalid = true;
+              const marks = parseFloat(valStr);
+              if (!isNaN(marks) && marks >= 0 && marks <= maxMarks) {
+                const passFail = calculatePassFail(marks, exam, sub);
+                upserts.push({
+                  student_id: studentId,
+                  school_id: currentSchool.id,
+                  class_number: classNum,
+                  exam_type: exam,
+                  subject: sub,
+                  marks: marks,
+                  pass_fail: passFail
+                });
+              } else {
+                hasInvalid = true;
+              }
             }
           }
         }
@@ -651,14 +673,16 @@ async function exportExcel() {
           let exMarks = sMarks[ex] || {};
           let allPass = true;
           let anyMark = false;
+          let anyAbsent = false;
           const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
           
           subjects.forEach(sub => {
             const m = exMarks[sub];
             if (m) {
-              row[`${sub}`] = isGraded ? m.pass_fail : m.marks;
+              row[`${sub}`] = isGraded ? m.pass_fail : (m.pass_fail === 'AB' ? 'AB' : m.marks);
               if (!isGraded) {
                 row[`${sub} Result`] = m.pass_fail;
+                if (m.pass_fail === 'AB') anyAbsent = true;
                 if (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D') allPass = false;
               }
               anyMark = true;
@@ -674,7 +698,7 @@ async function exportExcel() {
           if (isGraded) {
             row['Overall Result'] = anyMark ? 'Graded' : '-';
           } else {
-            row['Overall Result'] = anyMark ? (allPass ? 'Pass' : 'Fail') : '-';
+            row['Overall Result'] = anyMark ? (anyAbsent ? 'Absent' : (allPass ? 'Pass' : 'Fail')) : '-';
           }
           allData.push(row);
         });
@@ -792,6 +816,7 @@ async function exportPDF() {
           let exMarks = sMarks[ex] || {};
           let allPass = true;
           let anyMark = false;
+          let anyAbsent = false;
           let subStr = [];
           
           const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(ex);
@@ -799,13 +824,14 @@ async function exportPDF() {
           subjects.forEach(sub => {
             const m = exMarks[sub];
             if (m) {
-              subStr.push(isGraded ? `${sub}: ${m.pass_fail}` : `${sub}: ${m.marks}`);
+              subStr.push(isGraded ? `${sub}: ${m.pass_fail}` : `${sub}: ${m.pass_fail === 'AB' ? 'AB' : m.marks}`);
               anyMark = true;
+              if (m.pass_fail === 'AB') anyAbsent = true;
               if (!isGraded && (m.pass_fail === 'Fail' || m.pass_fail === 'Grade-D')) allPass = false;
             }
           });
           
-          let overall = anyMark ? (isGraded ? 'Graded' : (allPass ? 'Pass' : 'Fail')) : '-';
+          let overall = anyMark ? (isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (allPass ? 'Pass' : 'Fail'))) : '-';
           
           tableBody.push([
             classDisplayName(s.class_number),

@@ -635,13 +635,15 @@ async function loadAdminMarks() {
             let allPass = true;
             let hasMarks = false;
             let anyFail = false;
+            let anyAbsent = false;
             
             subjects.forEach(sub => {
                 const markRecord = studentMarks.find(m => m.subject === sub);
-                const markVal = markRecord ? (isGraded ? markRecord.pass_fail : (markRecord.marks !== null ? markRecord.marks : '')) : '';
+                const markVal = markRecord ? (isGraded ? markRecord.pass_fail : (markRecord.pass_fail === 'AB' ? 'AB' : (markRecord.marks !== null ? markRecord.marks : ''))) : '';
                 
                 if (markVal !== '') hasMarks = true;
-                if (!isGraded && markRecord && !isPassingGrade(markRecord.pass_fail)) anyFail = true;
+                if (!isGraded && markRecord && markRecord.pass_fail === 'AB') anyAbsent = true;
+                if (!isGraded && markRecord && markRecord.pass_fail !== 'AB' && !isPassingGrade(markRecord.pass_fail)) anyFail = true;
                 if (!isGraded && (!markRecord || !isPassingGrade(markRecord.pass_fail))) allPass = false;
                 
                 if (isGraded) {
@@ -658,10 +660,10 @@ async function loadAdminMarks() {
                 } else {
                     html += `
                         <td>
-                            <input type="number" class="marks-input mark-input" 
+                            <input type="text" class="marks-input mark-input" 
                                    data-subject="${sub}" 
                                    value="${markVal}" 
-                                   min="0" max="${getMaxMarks(examType)}">
+                                   placeholder="Max: ${getMaxMarks(examType)} or AB">
                         </td>
                     `;
                 }
@@ -671,6 +673,8 @@ async function loadAdminMarks() {
             if (hasMarks) {
                 if (isGraded) {
                     resultHtml = '<span class="badge badge-pass">Graded</span>';
+                } else if (anyAbsent) {
+                    resultHtml = '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>';
                 } else {
                     if (anyFail) {
                         resultHtml = '<span class="badge badge-fail">Fail</span>';
@@ -726,18 +730,37 @@ async function saveAdminMarks() {
                             pass_fail: markStr
                         });
                     } else {
-                        const marksNum = parseInt(markStr);
-                        const pf = calculatePassFail(marksNum, examType, subject);
-                        
-                        upsertData.push({
-                            student_id: studentId,
-                            school_id: schoolId,
-                            class_number: classNum,
-                            exam_type: examType,
-                            subject: subject,
-                            marks: marksNum,
-                            pass_fail: pf
-                        });
+                        const valUpper = markStr.trim().toUpperCase();
+                        if (valUpper === 'AB') {
+                            upsertData.push({
+                                student_id: studentId,
+                                school_id: schoolId,
+                                class_number: classNum,
+                                exam_type: examType,
+                                subject: subject,
+                                marks: null,
+                                pass_fail: 'AB'
+                            });
+                        } else {
+                            const marksNum = parseFloat(markStr);
+                            const maxMarks = getMaxMarks(examType);
+                            if (isNaN(marksNum) || marksNum < 0 || marksNum > maxMarks) {
+                                showToast(`Invalid marks entered. Must be between 0 and ${maxMarks}, or AB.`, 'error');
+                                hideLoading();
+                                return;
+                            }
+                            const pf = calculatePassFail(marksNum, examType, subject);
+                            
+                            upsertData.push({
+                                student_id: studentId,
+                                school_id: schoolId,
+                                class_number: classNum,
+                                exam_type: examType,
+                                subject: subject,
+                                marks: marksNum,
+                                pass_fail: pf
+                            });
+                        }
                     }
                 }
             });
@@ -886,13 +909,15 @@ async function exportAdminExcel() {
                 let anyFail = false;
                 let allPass = true;
                 let hasMarks = false;
+                let anyAbsent = false;
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
                     if (mark) {
-                        row[sub] = isGraded ? mark.pass_fail : mark.marks;
+                        row[sub] = isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : mark.marks);
                         hasMarks = true;
-                        if (!isGraded && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        if (!isGraded && mark.pass_fail === 'AB') anyAbsent = true;
+                        if (!isGraded && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
                     } else {
                         row[sub] = '';
                         if (!isGraded) allPass = false;
@@ -900,7 +925,7 @@ async function exportAdminExcel() {
                 });
                 
                 if (hasMarks) {
-                    row['Result'] = isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete'));
+                    row['Result'] = isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomplete')));
                 } else {
                     row['Result'] = '';
                 }
@@ -1115,20 +1140,22 @@ async function exportAdminPDF() {
                 let anyFail = false;
                 let allPass = true;
                 let hasMarks = false;
+                let anyAbsent = false;
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
                     if (mark) {
-                        row.push(isGraded ? mark.pass_fail : mark.marks);
+                        row.push(isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : mark.marks));
                         hasMarks = true;
-                        if (!isGraded && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                        if (!isGraded && mark.pass_fail === 'AB') anyAbsent = true;
+                        if (!isGraded && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
                     } else {
                         row.push('-');
                         if (!isGraded) allPass = false;
                     }
                 });
                 
-                const result = hasMarks ? (isGraded ? 'Graded' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp'))) : '-';
+                const result = hasMarks ? (isGraded ? 'Graded' : (anyAbsent ? 'Absent' : (anyFail ? 'Fail' : (allPass ? 'Pass' : 'Incomp')))) : '-';
                 row.push(result);
                 body.push(row);
             });
@@ -1392,6 +1419,7 @@ async function generateReport() {
                 let anyFail = false;
                 let allPass = true;
                 let hasMarks = false;
+                let anyAbsent = false;
                 
                 let rowHtml = `
                     <tr>
@@ -1403,9 +1431,10 @@ async function generateReport() {
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
-                    const val = mark ? (isGraded ? mark.pass_fail : (mark.marks !== null ? mark.marks : '')) : '';
+                    const val = mark ? (isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : (mark.marks !== null ? mark.marks : ''))) : '';
                     if (val !== '') hasMarks = true;
-                    if (!isGraded && mark && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                    if (!isGraded && mark && mark.pass_fail === 'AB') anyAbsent = true;
+                    if (!isGraded && mark && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
                     if (!isGraded && (!mark || !isPassingGrade(mark.pass_fail))) allPass = false;
                     
                     rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
@@ -1413,7 +1442,7 @@ async function generateReport() {
                 
                 let result = '-';
                 if (hasMarks) {
-                    result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>'));
+                    result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyAbsent ? '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>')));
                 }
                 
                 rowHtml += `<td>${result}</td></tr>`;
