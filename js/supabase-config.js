@@ -581,7 +581,17 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
     
     const dist = {};
     subjects.forEach(sub => {
-        dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+        dist[sub] = { 
+            'Grade-A': 0, 
+            'Grade-B': 0, 
+            'Grade-C': 0, 
+            'Grade-D': 0, 
+            'Total': 0,
+            'sumMarks': 0,
+            'countMarks': 0,
+            'highestMark': -Infinity,
+            'lowestMark': Infinity
+        };
     });
     
     const isGraded = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(examType).toUpperCase());
@@ -597,7 +607,14 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
                     else if (g === 'B') grade = 'Grade-B';
                     else if (g === 'C') grade = 'Grade-C';
                 } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
-                    grade = calculatePassFail(m.marks, examType, sub);
+                    const marksVal = parseFloat(m.marks);
+                    if (!isNaN(marksVal)) {
+                        grade = calculatePassFail(marksVal, examType, sub);
+                        dist[sub]['sumMarks'] += marksVal;
+                        dist[sub]['countMarks']++;
+                        if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
+                        if (marksVal < dist[sub]['lowestMark']) dist[sub]['lowestMark'] = marksVal;
+                    }
                 } else if (m.pass_fail) {
                     const g = String(m.pass_fail);
                     if (g === 'Pass') grade = 'Grade-C';
@@ -625,11 +642,16 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
                     <thead>
                         <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                             <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Subject</th>
-                            <th style="padding: 12px 15px; font-weight: 600; color: #15803d;">Grade-A (Excellent)</th>
-                            <th style="padding: 12px 15px; font-weight: 600; color: #1d4ed8;">Grade-B (Good)</th>
-                            <th style="padding: 12px 15px; font-weight: 600; color: #b45309;">Grade-C (Satisfactory)</th>
-                            <th style="padding: 12px 15px; font-weight: 600; color: #b91c1c;">Grade-D (Need Improvement)</th>
-                            <th style="padding: 12px 15px; font-weight: 600; background: rgba(0,0,0,0.03); color: #1e293b;">Total Graded</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #15803d;">Grade-A</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1d4ed8;">Grade-B</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #b45309;">Grade-C</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #b91c1c;">Grade-D</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Total</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #15803d;">Passed</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #b91c1c;">Failed</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Pass %</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Avg Marks (Avg %)</th>
+                            <th style="padding: 12px 15px; font-weight: 600; color: #1e293b;">Highest / Lowest</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -637,26 +659,35 @@ function getGradeDistributionHTML(students, marksList, subjects, examType, isStu
     
     subjects.forEach(sub => {
         const sDist = dist[sub];
+        const passed = sDist['Grade-A'] + sDist['Grade-B'] + sDist['Grade-C'];
+        const failed = sDist['Grade-D'];
+        const totalGraded = sDist['Total'];
+        const passPercent = totalGraded > 0 ? Math.round((passed / totalGraded) * 100) : 0;
+        
+        let avgStr = '-';
+        let highLowStr = '-';
+        
+        if (!isGraded && sDist['countMarks'] > 0) {
+            const avg = sDist['sumMarks'] / sDist['countMarks'];
+            const maxMarks = getMaxMarks(examType);
+            const avgPct = Math.round((avg / maxMarks) * 100);
+            avgStr = `${avg.toFixed(1)} / ${maxMarks} (${avgPct}%)`;
+            highLowStr = `${sDist['highestMark']} / ${sDist['lowestMark']}`;
+        }
+        
         html += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 12px 15px; font-weight: 500; color: #334155;">${sub}</td>
-                <td style="padding: 12px 15px;">
-                    <span style="font-weight: 600; color: #15803d;">${sDist['Grade-A']}</span> 
-                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-A']/sDist['Total']*100) : 0}%)</span>
-                </td>
-                <td style="padding: 12px 15px;">
-                    <span style="font-weight: 600; color: #1d4ed8;">${sDist['Grade-B']}</span> 
-                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-B']/sDist['Total']*100) : 0}%)</span>
-                </td>
-                <td style="padding: 12px 15px;">
-                    <span style="font-weight: 600; color: #b45309;">${sDist['Grade-C']}</span> 
-                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-C']/sDist['Total']*100) : 0}%)</span>
-                </td>
-                <td style="padding: 12px 15px;">
-                    <span style="font-weight: 600; color: #b91c1c;">${sDist['Grade-D']}</span> 
-                    <span style="color: #64748b; font-size: 0.85rem; margin-left: 4px;">(${sDist['Total'] > 0 ? Math.round(sDist['Grade-D']/sDist['Total']*100) : 0}%)</span>
-                </td>
-                <td style="padding: 12px 15px; background: rgba(0,0,0,0.01); font-weight: 600; color: #1e293b;">${sDist['Total']}</td>
+                <td style="padding: 12px 15px; color: #15803d; font-weight: 600;">${sDist['Grade-A']}</td>
+                <td style="padding: 12px 15px; color: #1d4ed8; font-weight: 600;">${sDist['Grade-B']}</td>
+                <td style="padding: 12px 15px; color: #b45309; font-weight: 600;">${sDist['Grade-C']}</td>
+                <td style="padding: 12px 15px; color: #b91c1c; font-weight: 600;">${sDist['Grade-D']}</td>
+                <td style="padding: 12px 15px; font-weight: 600;">${totalGraded}</td>
+                <td style="padding: 12px 15px; color: #15803d; font-weight: 600;">${passed}</td>
+                <td style="padding: 12px 15px; color: #b91c1c; font-weight: 600;">${failed}</td>
+                <td style="padding: 12px 15px; font-weight: 600; color: #1e293b;">${passPercent}%</td>
+                <td style="padding: 12px 15px; color: #334155;">${avgStr}</td>
+                <td style="padding: 12px 15px; color: #334155;">${highLowStr}</td>
             </tr>
         `;
     });

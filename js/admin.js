@@ -1027,7 +1027,17 @@ async function exportAdminExcel() {
             // Calculate Grade Distribution for Excel
             const dist = {};
             subjects.forEach(sub => {
-                dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+                dist[sub] = { 
+                    'Grade-A': 0, 
+                    'Grade-B': 0, 
+                    'Grade-C': 0, 
+                    'Grade-D': 0, 
+                    'Total': 0,
+                    'sumMarks': 0,
+                    'countMarks': 0,
+                    'highestMark': -Infinity,
+                    'lowestMark': Infinity
+                };
             });
             const isGradedExcel = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(examType).toUpperCase());
             students.forEach(student => {
@@ -1041,7 +1051,14 @@ async function exportAdminExcel() {
                             else if (g === 'B') grade = 'Grade-B';
                             else if (g === 'C') grade = 'Grade-C';
                         } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
-                            grade = calculatePassFail(m.marks, examType, sub);
+                            const marksVal = parseFloat(m.marks);
+                            if (!isNaN(marksVal)) {
+                                grade = calculatePassFail(marksVal, examType, sub);
+                                dist[sub]['sumMarks'] += marksVal;
+                                dist[sub]['countMarks']++;
+                                if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
+                                if (marksVal < dist[sub]['lowestMark']) dist[sub]['lowestMark'] = marksVal;
+                            }
                         } else if (m.pass_fail) {
                             const g = String(m.pass_fail);
                             if (g === 'Pass') grade = 'Grade-C';
@@ -1059,13 +1076,39 @@ async function exportAdminExcel() {
             
             const distData = subjects.map(sub => {
                 const sDist = dist[sub];
+                const passed = sDist['Grade-A'] + sDist['Grade-B'] + sDist['Grade-C'];
+                const failed = sDist['Grade-D'];
+                const totalGraded = sDist['Total'];
+                const passPercent = totalGraded > 0 ? Math.round((passed / totalGraded) * 100) : 0;
+                
+                let avgMarks = '-';
+                let avgPercent = '-';
+                let highest = '-';
+                let lowest = '-';
+                
+                if (!isGradedExcel && sDist['countMarks'] > 0) {
+                    const avg = sDist['sumMarks'] / sDist['countMarks'];
+                    const maxMarks = getMaxMarks(examType);
+                    avgMarks = avg.toFixed(2);
+                    avgPercent = `${Math.round((avg / maxMarks) * 100)}%`;
+                    highest = sDist['highestMark'];
+                    lowest = sDist['lowestMark'];
+                }
+                
                 return {
                     'Subject': sub,
                     'Grade-A (Excellent)': sDist['Grade-A'],
                     'Grade-B (Good)': sDist['Grade-B'],
                     'Grade-C (Satisfactory)': sDist['Grade-C'],
                     'Grade-D (Needs Improvement)': sDist['Grade-D'],
-                    'Total Graded': sDist['Total']
+                    'Total Graded': totalGraded,
+                    'Passed Count': passed,
+                    'Failed Count': failed,
+                    'Pass %': `${passPercent}%`,
+                    'Average Marks': avgMarks,
+                    'Average Marks %': avgPercent,
+                    'Highest Mark': highest,
+                    'Lowest Mark': lowest
                 };
             });
             
@@ -1276,7 +1319,17 @@ async function exportAdminPDF() {
             
             const dist = {};
             subjects.forEach(sub => {
-                dist[sub] = { 'Grade-A': 0, 'Grade-B': 0, 'Grade-C': 0, 'Grade-D': 0, 'Total': 0 };
+                dist[sub] = { 
+                    'Grade-A': 0, 
+                    'Grade-B': 0, 
+                    'Grade-C': 0, 
+                    'Grade-D': 0, 
+                    'Total': 0,
+                    'sumMarks': 0,
+                    'countMarks': 0,
+                    'highestMark': -Infinity,
+                    'lowestMark': Infinity
+                };
             });
             const isGradedPDF = ['MBLP EXAM1', 'MBLP EXAM2', 'MBLP EXAM3', 'END LINE TEST'].includes(String(examType).toUpperCase());
             students.forEach(student => {
@@ -1290,7 +1343,14 @@ async function exportAdminPDF() {
                             else if (g === 'B') grade = 'Grade-B';
                             else if (g === 'C') grade = 'Grade-C';
                         } else if (m.marks !== null && m.marks !== undefined && m.marks !== '') {
-                            grade = calculatePassFail(m.marks, examType, sub);
+                            const marksVal = parseFloat(m.marks);
+                            if (!isNaN(marksVal)) {
+                                grade = calculatePassFail(marksVal, examType, sub);
+                                dist[sub]['sumMarks'] += marksVal;
+                                dist[sub]['countMarks']++;
+                                if (marksVal > dist[sub]['highestMark']) dist[sub]['highestMark'] = marksVal;
+                                if (marksVal < dist[sub]['lowestMark']) dist[sub]['lowestMark'] = marksVal;
+                            }
                         } else if (m.pass_fail) {
                             const g = String(m.pass_fail);
                             if (g === 'Pass') grade = 'Grade-C';
@@ -1306,20 +1366,37 @@ async function exportAdminPDF() {
                 });
             });
             
-            const distHead = [['Subject', 'Grade-A (Excellent)', 'Grade-B (Good)', 'Grade-C (Satisfactory)', 'Grade-D (Needs Improvement)', 'Total Graded']];
+            const distHead = [['Subject', 'Grade-A', 'Grade-B', 'Grade-C', 'Grade-D', 'Total', 'Passed', 'Failed', 'Pass %', 'Avg Marks (Avg %)', 'Highest / Lowest']];
             const distBody = subjects.map(sub => {
                 const sDist = dist[sub];
-                const pctA = sDist['Total'] > 0 ? Math.round(sDist['Grade-A']/sDist['Total']*100) : 0;
-                const pctB = sDist['Total'] > 0 ? Math.round(sDist['Grade-B']/sDist['Total']*100) : 0;
-                const pctC = sDist['Total'] > 0 ? Math.round(sDist['Grade-C']/sDist['Total']*100) : 0;
-                const pctD = sDist['Total'] > 0 ? Math.round(sDist['Grade-D']/sDist['Total']*100) : 0;
+                const passed = sDist['Grade-A'] + sDist['Grade-B'] + sDist['Grade-C'];
+                const failed = sDist['Grade-D'];
+                const totalGraded = sDist['Total'];
+                const passPercent = totalGraded > 0 ? Math.round((passed / totalGraded) * 100) : 0;
+                
+                let avgStr = '-';
+                let highLowStr = '-';
+                
+                if (!isGradedPDF && sDist['countMarks'] > 0) {
+                    const avg = sDist['sumMarks'] / sDist['countMarks'];
+                    const maxMarks = getMaxMarks(examType);
+                    const avgPct = Math.round((avg / maxMarks) * 100);
+                    avgStr = `${avg.toFixed(1)} / ${maxMarks} (${avgPct}%)`;
+                    highLowStr = `${sDist['highestMark']} / ${sDist['lowestMark']}`;
+                }
+                
                 return [
                     sub,
-                    `${sDist['Grade-A']} (${pctA}%)`,
-                    `${sDist['Grade-B']} (${pctB}%)`,
-                    `${sDist['Grade-C']} (${pctC}%)`,
-                    `${sDist['Grade-D']} (${pctD}%)`,
-                    sDist['Total']
+                    sDist['Grade-A'],
+                    sDist['Grade-B'],
+                    sDist['Grade-C'],
+                    sDist['Grade-D'],
+                    totalGraded,
+                    passed,
+                    failed,
+                    `${passPercent}%`,
+                    avgStr,
+                    highLowStr
                 ];
             });
             
