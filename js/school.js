@@ -1249,4 +1249,50 @@ async function deleteStaff(id, name) {
   }
 }
 
+function openBulkPasteModal() {
+  const modal = document.getElementById('bulk-paste-modal');
+  const textarea = document.getElementById('bulk-paste-textarea');
+  textarea.value = '';
+  modal.classList.remove('hidden');
+  textarea.focus();
+}
+
+function closeBulkPasteModal() {
+  document.getElementById('bulk-paste-modal').classList.add('hidden');
+}
+
+function applyBulkPaste() {
+  const text = document.getElementById('bulk-paste-textarea').value;
+  const lines = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+                    
+  if (lines.length === 0) {
+    showToast('Please paste at least one name.', 'warning');
+    return;
+  }
+  
+  const tbody = document.getElementById('students-table-body');
+  if (!tbody) {
+    showToast('Student list is not loaded yet.', 'error');
+    return;
+  }
+  
+  const rows = tbody.querySelectorAll('tr');
+  let count = 0;
+  
+  lines.forEach((name, index) => {
+    if (index < rows.length) {
+      const input = rows[index].querySelector('.student-name');
+      if (input) {
+        input.value = name;
+        count++;
+      }
+    }
+  });
+  
+  showToast(`Successfully populated ${count} student names. Click 'Save Students' to save.`, 'success');
+  closeBulkPasteModal();
+}
+
 document.addEventListener('DOMContentLoaded', initSchool);

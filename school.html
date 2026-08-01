@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=3.9">
+  <link rel="stylesheet" href="css/styles.css?v=4.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -103,6 +103,9 @@
               <input type="text" id="stu-search-input" class="form-input" placeholder="Search name or roll no..." oninput="renderStudentTable()">
             </div>
             <div class="filter-actions">
+              <button class="btn btn-outline btn-sm" onclick="openBulkPasteModal()" style="margin-right: 8px;">
+                <i class="fas fa-paste"></i> Bulk Paste Names
+              </button>
               <button class="btn btn-primary btn-sm" onclick="saveStudents()">
                 <i class="fas fa-save"></i> Save Students
               </button>
@@ -397,11 +400,36 @@
   </div>
 </div>
 
+<!-- MODAL: Bulk Paste Student Names -->
+<div class="modal-overlay hidden" id="bulk-paste-modal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>Bulk Paste Student Names</h3>
+      <button class="modal-close" onclick="closeBulkPasteModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.85rem; margin-bottom: 12px; color: #94a3b8;">
+        Copy a column of student names from Excel (one student name per row) and paste them in the text area below. They will be populated sequentially starting from Roll No 1.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Paste Names here</label>
+        <textarea id="bulk-paste-textarea" class="form-input" style="height: 200px; font-family: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="Student Name 1&#10;Student Name 2&#10;Student Name 3..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBulkPasteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyBulkPaste()">
+        <i class="fas fa-check"></i> Apply Names
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=3.9"></script>
-<script src="js/auth.js?v=3.9"></script>
-<script src="js/school.js?v=3.9"></script>
+<script src="js/supabase-config.js?v=4.0"></script>
+<script src="js/auth.js?v=4.0"></script>
+<script src="js/school.js?v=4.0"></script>
 </body>
 </html>
