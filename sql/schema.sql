@@ -6,6 +6,7 @@
 -- 1. Schools Table
 CREATE TABLE IF NOT EXISTS schools (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    district TEXT,
     school_name TEXT NOT NULL,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
@@ -190,5 +191,12 @@ ON CONFLICT (username) DO NOTHING;
 --
 -- -- 3. Delete old Science records for classes 8, 9, 10
 -- DELETE FROM exam_marks WHERE subject = 'Science' AND class_number IN ('8', '9', '10');
+
+-- ============================================
+-- MIGRATION: Add district column to schools table
+-- Run this in Supabase SQL editor to support school districts:
+-- ============================================
+-- ALTER TABLE schools ADD COLUMN IF NOT EXISTS district TEXT;
+
 
 

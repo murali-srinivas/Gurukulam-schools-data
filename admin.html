@@ -146,7 +146,7 @@
           <div class="table-container standalone">
             <table>
               <thead>
-                <tr><th>#</th><th>School Name</th><th>Username</th><th>Password</th><th>Created</th><th>Actions</th></tr>
+                <tr><th>#</th><th>District</th><th>School Name</th><th>Username</th><th>Password</th><th>Created</th><th>Actions</th></tr>
               </thead>
               <tbody id="schools-table-body"></tbody>
             </table>
@@ -357,6 +357,10 @@
     <div class="modal-body">
       <form id="school-form" onsubmit="saveSchool(event)">
         <input type="hidden" id="school-edit-id">
+        <div class="form-group">
+          <label class="form-label">District</label>
+          <input type="text" class="form-input" id="school-district-input" placeholder="Enter district">
+        </div>
         <div class="form-group">
           <label class="form-label">School Name</label>
           <input type="text" class="form-input" id="school-name-input" required placeholder="Enter school name">

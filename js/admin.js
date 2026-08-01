@@ -244,6 +244,7 @@ function openSchoolModal(id = null) {
         if (school) {
             title.textContent = 'Edit School';
             document.getElementById('school-edit-id').value = school.id;
+            document.getElementById('school-district-input').value = school.district || '';
             document.getElementById('school-name-input').value = school.school_name;
             document.getElementById('school-username-input').value = school.username;
             document.getElementById('school-password-input').value = school.password;
@@ -264,6 +265,7 @@ async function saveSchool(event) {
     event.preventDefault();
     
     const id = document.getElementById('school-edit-id').value;
+    const district = document.getElementById('school-district-input').value.trim();
     const schoolName = document.getElementById('school-name-input').value;
     const username = document.getElementById('school-username-input').value;
     const password = document.getElementById('school-password-input').value;
@@ -271,6 +273,7 @@ async function saveSchool(event) {
     showLoading();
     try {
         const payload = {
+            district: district || null,
             school_name: schoolName,
             username: username,
             password: password,
@@ -327,7 +330,7 @@ function renderSchoolsTable() {
     tbody.innerHTML = '';
     
     if (allSchools.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No schools found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No schools found</td></tr>';
         return;
     }
     
@@ -338,6 +341,7 @@ function renderSchoolsTable() {
         
         tr.innerHTML = `
             <td>${index + 1}</td>
+            <td>${school.district || '-'}</td>
             <td>${school.school_name}</td>
             <td>${school.username}</td>
             <td class="password-cell">
