@@ -144,7 +144,7 @@ Then open `http://localhost:3000` in your browser.
 
 ### Search & Filtering
 * **Admin Dashboard**:
-  * **Search School**: Real-time school stats search filter.
+  * **Search School**: Real-time school stats search filter on the Overview tab, Exam Marks filter bar, and Reports filter bar (enabling quick lookup of schools).
   * **Search Student**: Real-time student search filter (by name/roll number/school).
   * **Search Staff**: Real-time staff search filter (by name/designation/subject/school).
 * **School Dashboard**:

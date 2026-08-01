@@ -62,7 +62,18 @@ function switchTab(tabName) {
         if (searchInput) searchInput.value = '';
         loadAdminStaff();
     } else if (tabName === 'marks') {
+        const searchInputMarks = document.getElementById('marks-school-search');
+        if (searchInputMarks) {
+            searchInputMarks.value = '';
+            filterSchoolDropdownForMarks();
+        }
         onAdminMarksFilterChange();
+    } else if (tabName === 'reports') {
+        const searchInputReports = document.getElementById('report-school-search');
+        if (searchInputReports) {
+            searchInputReports.value = '';
+            filterSchoolDropdownForReports();
+        }
     }
 }
 
@@ -89,8 +100,12 @@ async function loadSchoolsList() {
         populateFilterDropdown('admin-staff-school-select', schoolOptions, 'id', 'name');
         populateFilterDropdown('overview-school-select', schoolOptions, 'id', 'name');
         
-        const searchInput = document.getElementById('overview-school-search');
-        if (searchInput) searchInput.value = '';
+        const searchInputOverview = document.getElementById('overview-school-search');
+        if (searchInputOverview) searchInputOverview.value = '';
+        const searchInputMarks = document.getElementById('marks-school-search');
+        if (searchInputMarks) searchInputMarks.value = '';
+        const searchInputReports = document.getElementById('report-school-search');
+        if (searchInputReports) searchInputReports.value = '';
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
@@ -104,6 +119,42 @@ function filterSchoolDropdown() {
     const select = document.getElementById('overview-school-select');
     
     select.innerHTML = '<option value="">-- Select a School --</option>';
+    
+    const filtered = allSchools.filter(school => 
+        school.school_name.toLowerCase().includes(searchVal)
+    );
+    
+    filtered.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school.school_name;
+        select.appendChild(option);
+    });
+}
+
+function filterSchoolDropdownForMarks() {
+    const searchVal = document.getElementById('marks-school-search').value.toLowerCase();
+    const select = document.getElementById('marks-filter-school');
+    
+    select.innerHTML = '<option value="">Select School</option>';
+    
+    const filtered = allSchools.filter(school => 
+        school.school_name.toLowerCase().includes(searchVal)
+    );
+    
+    filtered.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school.school_name;
+        select.appendChild(option);
+    });
+}
+
+function filterSchoolDropdownForReports() {
+    const searchVal = document.getElementById('report-school-search').value.toLowerCase();
+    const select = document.getElementById('report-filter-school');
+    
+    select.innerHTML = '<option value="">All Schools</option>';
     
     const filtered = allSchools.filter(school => 
         school.school_name.toLowerCase().includes(searchVal)

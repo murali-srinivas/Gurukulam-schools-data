@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=3.8">
+  <link rel="stylesheet" href="css/styles.css?v=3.9">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -197,6 +197,10 @@
         <div class="card">
           <div class="filter-bar">
             <div class="filter-group">
+              <label>Search School</label>
+              <input type="text" id="marks-school-search" class="form-input" style="padding: 6px 12px; margin-bottom: 0;" placeholder="Search school..." oninput="filterSchoolDropdownForMarks()">
+            </div>
+            <div class="filter-group">
               <label>School</label>
               <select id="marks-filter-school" onchange="onAdminMarksFilterChange()"><option value="">Select School</option></select>
             </div>
@@ -239,6 +243,10 @@
                 <option value="staff">Staff Directory</option>
                 <option value="schools">Schools List</option>
               </select>
+            </div>
+            <div class="filter-group">
+              <label>Search School</label>
+              <input type="text" id="report-school-search" class="form-input" style="padding: 6px 12px; margin-bottom: 0;" placeholder="Search school..." oninput="filterSchoolDropdownForReports()">
             </div>
             <div class="filter-group">
               <label>School</label>
@@ -603,8 +611,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=3.8"></script>
-<script src="js/auth.js?v=3.8"></script>
-<script src="js/admin.js?v=3.8"></script>
+<script src="js/supabase-config.js?v=3.9"></script>
+<script src="js/auth.js?v=3.9"></script>
+<script src="js/admin.js?v=3.9"></script>
 </body>
 </html>
