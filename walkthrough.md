@@ -142,6 +142,7 @@ Then open `http://localhost:3000` in your browser.
 * **Exam Marks Total Column**: Added a dynamic **Total** column in both the Admin and School marks entry grids and all report exports (Excel and PDF sheets). The sum is calculated on-the-fly, excluding any absent subjects (`'AB'`), and saved in Supabase as a dedicated `'Total'` subject row.
 * **Extended Grade Distribution Summary**: Added comprehensive subject-wise stats class-wise, including **No. of Students Passed**, **No. of Students Failed**, **Pass %**, **Average Marks**, **Average Marks %**, **Highest Mark**, and **Lowest Mark** to on-screen previews, Excel worksheets, and PDF reports. Absent students (`'AB'`) are automatically ignored in these computations.
 * **Bulk Paste Student Names**: Added a "Bulk Paste Names" option in the School Dashboard's student entry grid. Users can copy a column of names from any Excel file and paste them directly into a text field. The names are parsed and populated sequentially (from Roll No 1 to 40) in the grid, allowing rapid data entry before hitting "Save Students".
+* **Student Data Actions inside School Login**: Added inline editing, adding, and a dedicated **Delete** option for students directly within the school dashboard student grid. Genders can be selected and names typed to add/edit, and a red delete icon appears on saved rows to prompt for confirmation and remove the student (and their corresponding marks) from Supabase.
 
 ### Search & Filtering
 * **Admin Dashboard**:

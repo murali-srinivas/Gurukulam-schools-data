@@ -207,6 +207,9 @@ async function loadStudentTable() {
             <option value="Other" ${s && s.gender === 'Other' ? 'selected' : ''}>Other</option>
           </select>
         </td>
+        <td>
+          ${s ? `<button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}', '${s.student_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>` : ''}
+        </td>
       `;
       tbody.appendChild(row);
     }
@@ -1293,6 +1296,29 @@ function applyBulkPaste() {
   
   showToast(`Successfully populated ${count} student names. Click 'Save Students' to save.`, 'success');
   closeBulkPasteModal();
+}
+
+function deleteStudent(id, name) {
+  if (!confirm(`Are you sure you want to delete student: ${name}? This will also delete all their exam marks.`)) return;
+  
+  showLoading();
+  supabase
+    .from('students')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      hideLoading();
+      if (error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Student deleted successfully', 'success');
+        loadStudentTable();
+      }
+    })
+    .catch(err => {
+      hideLoading();
+      showToast(err.message, 'error');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initSchool);
