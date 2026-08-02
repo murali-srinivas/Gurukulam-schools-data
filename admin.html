@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=4.1">
+  <link rel="stylesheet" href="css/styles.css?v=4.2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -406,7 +406,30 @@
         </div>
         <div class="form-group">
           <label class="form-label">Designation</label>
-          <input type="text" class="form-input" id="admin-staff-designation" required placeholder="e.g. TGT, PGT, Principal">
+          <select class="form-select" id="admin-staff-designation" required>
+            <option value="">Select Designation</option>
+            <option value="Principal(College)">Principal(College)</option>
+            <option value="Principal(School)">Principal(School)</option>
+            <option value="Junior Lecturer">Junior Lecturer</option>
+            <option value="PGT">PGT</option>
+            <option value="TGT">TGT</option>
+            <option value="PD(Col)">PD(Col)</option>
+            <option value="PD(Sch)">PD(Sch)</option>
+            <option value="PET">PET</option>
+            <option value="Art & Craft">Art & Craft</option>
+            <option value="Librarian">Librarian</option>
+            <option value="Supndt">Supndt</option>
+            <option value="Sr Asst">Sr Asst</option>
+            <option value="Jr Asst">Jr Asst</option>
+            <option value="DEO">DEO</option>
+            <option value="Record Asst">Record Asst</option>
+            <option value="Lab Asst">Lab Asst</option>
+            <option value="Attender">Attender</option>
+            <option value="Cook">Cook</option>
+            <option value="Kitchen Helper">Kitchen Helper</option>
+            <option value="MPW">MPW</option>
+            <option value="Ayah">Ayah</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Employment Type</label>
@@ -615,8 +638,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=4.1"></script>
-<script src="js/auth.js?v=4.1"></script>
-<script src="js/admin.js?v=4.1"></script>
+<script src="js/supabase-config.js?v=4.2"></script>
+<script src="js/auth.js?v=4.2"></script>
+<script src="js/admin.js?v=4.2"></script>
 </body>
 </html>
