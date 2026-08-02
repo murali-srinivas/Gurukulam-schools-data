@@ -1962,6 +1962,8 @@ function openAdminStaffModal(id = null) {
             document.getElementById('admin-staff-subject').value = s.subject;
             document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
             document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
+            document.getElementById('admin-staff-phone1').value = s.phone_1 || '';
+            document.getElementById('admin-staff-phone2').value = s.phone_2 || '';
             
             populateQualFormFields('admin-staff', s);
         }
@@ -1991,6 +1993,8 @@ async function saveAdminStaff(event) {
     const subject = document.getElementById('admin-staff-subject').value.trim();
     const joinedService = document.getElementById('admin-staff-joined-service').value || null;
     const joinedInst = document.getElementById('admin-staff-joined-institution').value || null;
+    const phone1 = document.getElementById('admin-staff-phone1').value.trim() || null;
+    const phone2 = document.getElementById('admin-staff-phone2').value.trim() || null;
     
     const qualData = readQualFormFields('admin-staff');
     
@@ -2002,6 +2006,8 @@ async function saveAdminStaff(event) {
         subject: subject,
         joined_service_date: joinedService,
         joined_institution_date: joinedInst,
+        phone_1: phone1,
+        phone_2: phone2,
         ...qualData
     };
     

@@ -144,6 +144,7 @@ Then open `http://localhost:3000` in your browser.
 * **Bulk Paste Student Names**: Added a "Bulk Paste Names" option in the School Dashboard's student entry grid. Users can copy a column of names from any Excel file and paste them directly into a text field. The names are parsed and populated sequentially (from Roll No 1 to 40) in the grid, allowing rapid data entry before hitting "Save Students".
 * **Student Data Actions inside School Login**: Added inline editing, adding, and a dedicated **Delete** option for students directly within the school dashboard student grid. Genders can be selected and names typed to add/edit, and a red delete icon appears on saved rows to prompt for confirmation and remove the student (and their corresponding marks) from Supabase.
 * **Staff Designation Dropdown Menu**: Replaced the custom text input fields for "Designation" with an explicit, unified dropdown menu containing 21 pre-selected options (Principal, Lecturers, Teachers, Office Staff, Helpers, etc.) across both the admin and school dashboards.
+* **Staff Phone Number Fields**: Added Phone Number - 1 and Phone Number - 2 input fields in both school and admin dashboard modals immediately following the Qualifications Details panel. These are saved to Supabase under the `phone_1` and `phone_2` columns.
 
 ### Search & Filtering
 * **Admin Dashboard**:

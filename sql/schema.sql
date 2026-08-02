@@ -101,6 +101,8 @@ CREATE TABLE IF NOT EXISTS staff (
     qualification_others TEXT,
     joined_service_date DATE,
     joined_institution_date DATE,
+    phone_1 TEXT,
+    phone_2 TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -197,6 +199,14 @@ ON CONFLICT (username) DO NOTHING;
 -- Run this in Supabase SQL editor to support school districts:
 -- ============================================
 -- ALTER TABLE schools ADD COLUMN IF NOT EXISTS district TEXT;
+
+-- ============================================
+-- MIGRATION: Add phone columns to staff table
+-- Run this in Supabase SQL editor to support staff phone numbers:
+-- ============================================
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS phone_1 TEXT;
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS phone_2 TEXT;
+
 
 
 
