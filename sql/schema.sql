@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS students (
     section TEXT NOT NULL CHECK (section IN ('A', 'B')),
     roll_number INTEGER NOT NULL CHECK (roll_number BETWEEN 1 AND 40),
     student_name TEXT NOT NULL DEFAULT '',
-    gender TEXT NOT NULL DEFAULT '' CHECK (gender IN ('', 'Male', 'Female', 'Other')),
+    gender TEXT NOT NULL DEFAULT '' CHECK (gender IN ('', 'Boy', 'Girl')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(school_id, class_number, section, roll_number)
 );
@@ -206,6 +206,16 @@ ON CONFLICT (username) DO NOTHING;
 -- ============================================
 -- ALTER TABLE staff ADD COLUMN IF NOT EXISTS phone_1 TEXT;
 -- ALTER TABLE staff ADD COLUMN IF NOT EXISTS phone_2 TEXT;
+
+-- ============================================
+-- MIGRATION: Update check constraint for student genders (Male/Female/Other to Boy/Girl)
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- ALTER TABLE students DROP CONSTRAINT IF EXISTS students_gender_check;
+-- ALTER TABLE students ADD CONSTRAINT students_gender_check CHECK (gender IN ('', 'Boy', 'Girl'));
+-- UPDATE students SET gender = 'Boy' WHERE gender IN ('Male', 'Other');
+-- UPDATE students SET gender = 'Girl' WHERE gender = 'Female';
+
 
 
 

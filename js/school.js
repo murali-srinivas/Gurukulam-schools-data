@@ -1,5 +1,11 @@
 let currentSchool = null;
 
+function getGenderLabel(gender) {
+    if (gender === 'Female') return 'Girl';
+    if (gender === 'Male' || gender === 'Other') return 'Boy';
+    return gender || '';
+}
+
 async function initSchool() {
   currentSchool = getSession();
   if (!currentSchool) {
@@ -202,9 +208,8 @@ async function loadStudentTable() {
         <td>
           <select class="table-select student-gender">
             <option value="">Select</option>
-            <option value="Male" ${s && s.gender === 'Male' ? 'selected' : ''}>Male</option>
-            <option value="Female" ${s && s.gender === 'Female' ? 'selected' : ''}>Female</option>
-            <option value="Other" ${s && s.gender === 'Other' ? 'selected' : ''}>Other</option>
+            <option value="Boy" ${s && s.gender === 'Boy' ? 'selected' : ''}>Boy</option>
+            <option value="Girl" ${s && s.gender === 'Girl' ? 'selected' : ''}>Girl</option>
           </select>
         </td>
         <td>
@@ -239,13 +244,14 @@ async function saveStudents() {
     const id = row.dataset.id;
     
     if (name) {
+      const dbGender = gender === 'Girl' ? 'Female' : 'Male';
       const data = {
         school_id: currentSchool.id,
         class_number: classNum,
         section: section,
         roll_number: rollNo,
         student_name: name,
-        gender: gender || 'Other'
+        gender: dbGender
       };
       if (id) {
         data.id = id;
@@ -708,7 +714,7 @@ async function exportExcel() {
            'Section': s.section,
            'Roll No': s.roll_number,
            'Student Name': s.student_name,
-           'Gender': s.gender
+           'Gender': getGenderLabel(s.gender)
          };
          allData.push(row);
       } else {
@@ -718,7 +724,7 @@ async function exportExcel() {
             'Section': s.section,
             'Roll No': s.roll_number,
             'Student Name': s.student_name,
-            'Gender': s.gender,
+            'Gender': getGenderLabel(s.gender),
             'Exam': ex
           };
           

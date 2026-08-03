@@ -1,5 +1,11 @@
 let allSchools = [];
 
+function getGenderLabel(gender) {
+    if (gender === 'Female') return 'Girl';
+    if (gender === 'Male' || gender === 'Other') return 'Boy';
+    return gender || '';
+}
+
 async function initAdmin() {
     try {
         const session = getSession();
@@ -414,7 +420,7 @@ function renderAdminStudents() {
         tr.innerHTML = `
             <td>${student.roll_number}</td>
             <td>${student.student_name}</td>
-            <td>${student.gender || '-'}</td>
+            <td>${getGenderLabel(student.gender) || '-'}</td>
             <td>${classDisplayName(student.class_number)}</td>
             <td>${student.section}</td>
             <td>${schoolName}</td>
@@ -467,7 +473,7 @@ function openStudentModal(id = null) {
             document.getElementById('student-section-select').value = s.section;
             document.getElementById('student-roll-input').value = s.roll_number;
             document.getElementById('student-name-input').value = s.student_name;
-            document.getElementById('student-gender-select').value = s.gender || 'Male';
+            document.getElementById('student-gender-select').value = s.gender === 'Female' ? 'Girl' : 'Boy';
         }
     } else {
         title.textContent = 'Add Student';
@@ -509,7 +515,7 @@ async function saveStudent(event) {
         section: sectionVal,
         roll_number: rollVal,
         student_name: nameVal,
-        gender: genderVal
+        gender: genderVal === 'Girl' ? 'Female' : 'Male'
     };
     
     showLoading();
@@ -1033,7 +1039,7 @@ async function exportAdminExcel() {
                     'Section': student.section,
                     'Roll No': student.roll_number,
                     'Student Name': student.student_name,
-                    'Gender': student.gender || ''
+                    'Gender': getGenderLabel(student.gender)
                 };
                 
                 const subjects = getSubjects(student.class_number, examType);
@@ -1199,7 +1205,7 @@ async function exportAdminExcel() {
                     'Section': student.section,
                     'Roll No': student.roll_number,
                     'Student Name': student.student_name,
-                    'Gender': student.gender || ''
+                    'Gender': getGenderLabel(student.gender)
                 };
             });
             
@@ -1494,7 +1500,7 @@ async function exportAdminPDF() {
                     student.section,
                     student.roll_number,
                     student.student_name,
-                    student.gender || ''
+                    getGenderLabel(student.gender)
                 ];
             });
             
@@ -1738,7 +1744,7 @@ async function generateReport() {
                         <td>${student.section}</td>
                         <td>${student.roll_number}</td>
                         <td>${student.student_name}</td>
-                        <td>${student.gender || '-'}</td>
+                        <td>${getGenderLabel(student.gender) || '-'}</td>
                     </tr>
                 `;
             });
