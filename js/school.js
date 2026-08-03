@@ -189,15 +189,19 @@ async function loadStudentTable() {
       
     if (error) throw error;
     
+    let maxRoll = 40;
     const studentsMap = {};
     students.forEach(s => {
       studentsMap[s.roll_number] = s;
+      if (s.roll_number > maxRoll) {
+        maxRoll = s.roll_number;
+      }
     });
     
     const tbody = document.getElementById('students-table-body');
     tbody.innerHTML = '';
     
-    for (let i = 1; i <= MAX_STUDENTS; i++) {
+    for (let i = 1; i <= maxRoll; i++) {
       const s = studentsMap[i] || null;
       const row = document.createElement('tr');
       if (s) row.dataset.id = s.id;
@@ -208,8 +212,8 @@ async function loadStudentTable() {
         <td>
           <select class="table-select student-gender">
             <option value="">Select</option>
-            <option value="Boy" ${s && s.gender === 'Boy' ? 'selected' : ''}>Boy</option>
-            <option value="Girl" ${s && s.gender === 'Girl' ? 'selected' : ''}>Girl</option>
+            <option value="Boy" ${s && (s.gender === 'Boy' || s.gender === 'Male' || s.gender === 'Other') ? 'selected' : ''}>Boy</option>
+            <option value="Girl" ${s && (s.gender === 'Girl' || s.gender === 'Female') ? 'selected' : ''}>Girl</option>
           </select>
         </td>
         <td>
@@ -1293,9 +1297,13 @@ function applyBulkPaste() {
     return;
   }
   
-  const rows = tbody.querySelectorAll('tr');
-  let count = 0;
+  let rows = tbody.querySelectorAll('tr');
+  while (lines.length > rows.length) {
+    addNewStudentRow();
+    rows = tbody.querySelectorAll('tr');
+  }
   
+  let count = 0;
   lines.forEach((name, index) => {
     if (index < rows.length) {
       const input = rows[index].querySelector('.student-name');
@@ -1331,6 +1339,27 @@ function deleteStudent(id, name) {
       hideLoading();
       showToast(err.message, 'error');
     });
+}
+
+function addNewStudentRow() {
+  const tbody = document.getElementById('students-table-body');
+  if (!tbody) return;
+  const nextRollNo = tbody.querySelectorAll('tr').length + 1;
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${nextRollNo}</td>
+    <td><input type="text" class="table-input student-name" placeholder="Student Name" value=""></td>
+    <td>
+      <select class="table-select student-gender">
+        <option value="">Select</option>
+        <option value="Boy">Boy</option>
+        <option value="Girl">Girl</option>
+      </select>
+    </td>
+    <td></td>
+  `;
+  tbody.appendChild(row);
+  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 document.addEventListener('DOMContentLoaded', initSchool);
