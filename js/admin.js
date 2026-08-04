@@ -956,12 +956,26 @@ async function deleteAdminMarks() {
 function onAdminReportTypeChange() {
     const type = document.getElementById('report-filter-type').value;
     const schoolSelect = document.getElementById('report-filter-school');
+    const schoolSearch = document.getElementById('report-school-search');
     const classSelect = document.getElementById('report-filter-class');
     const sectionSelect = document.getElementById('report-filter-section');
     const examSelect = document.getElementById('report-filter-exam');
     
+    if (schoolSearch) {
+        schoolSearch.disabled = (type === 'combined_marks' || type === 'schools');
+        if (type === 'combined_marks' || type === 'schools') {
+            schoolSearch.value = '';
+        }
+    }
+    
     if (type === 'marks') {
         schoolSelect.disabled = false;
+        classSelect.disabled = false;
+        sectionSelect.disabled = false;
+        examSelect.disabled = false;
+    } else if (type === 'combined_marks') {
+        schoolSelect.value = '';
+        schoolSelect.disabled = true;
         classSelect.disabled = false;
         sectionSelect.disabled = false;
         examSelect.disabled = false;
@@ -1000,17 +1014,25 @@ async function exportAdminExcel() {
     
     showLoading();
     try {
-        if (type === 'marks') {
-            if (!schoolId || !examType) {
+        if (type === 'marks' || type === 'combined_marks') {
+            if (type === 'marks' && (!schoolId || !examType)) {
                 showToast('Please select at least School and Exam for marks report', 'warning');
                 hideLoading();
                 return;
             }
+            if (type === 'combined_marks' && (!classVal || !examType)) {
+                showToast('Please select at least Class and Exam for combined report', 'warning');
+                hideLoading();
+                return;
+            }
             
-            let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId);
+            let stuQuery = supabase.from('students').select('*');
+            if (type === 'marks') {
+                stuQuery = stuQuery.eq('school_id', schoolId);
+            }
             if (classVal) stuQuery = stuQuery.eq('class_number', classVal);
             if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
-            const { data: students, error: stuError } = await stuQuery.order('class_number').order('section').order('roll_number');
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('class_number').order('section').order('roll_number');
             if (stuError) throw stuError;
             
             if (!students || students.length === 0) {
@@ -1019,22 +1041,40 @@ async function exportAdminExcel() {
                 return;
             }
             
-            const studentIds = students.map(s => s.id);
-            const { data: marks, error: marksError } = await supabase
-                .from('exam_marks')
-                .select('*')
-                .eq('exam_type', examType)
-                .in('student_id', studentIds);
+            let marks;
+            if (type === 'marks') {
+                const studentIds = students.map(s => s.id);
+                const { data: mData, error: marksError } = await supabase
+                    .from('exam_marks')
+                    .select('*')
+                    .eq('exam_type', examType)
+                    .in('student_id', studentIds);
+                if (marksError) throw marksError;
+                marks = mData;
+            } else {
+                // Fetch all marks for this class and exam type across all schools
+                const { data: mData, error: marksError } = await supabase
+                    .from('exam_marks')
+                    .select('*')
+                    .eq('class_number', classVal)
+                    .eq('exam_type', examType);
+                if (marksError) throw marksError;
                 
-            if (marksError) throw marksError;
+                const studentIdsSet = new Set(students.map(s => s.id));
+                marks = mData.filter(m => studentIdsSet.has(m.student_id));
+            }
             
             const school = allSchools.find(s => s.id === schoolId);
-            const schoolName = school ? school.school_name : 'Unknown';
+            const schoolName = school ? school.school_name : 'All_Schools_Combined';
             
             const reportData = [];
+            const subjects = classVal ? getSubjects(classVal, examType) : ['Telugu', 'English', 'Maths'];
+            
             students.forEach(student => {
+                const sSchool = allSchools.find(s => s.id === student.school_id);
+                const sSchoolName = sSchool ? sSchool.school_name : 'Unknown';
                 const row = {
-                    'School': schoolName,
+                    'School': sSchoolName,
                     'Class': classDisplayName(student.class_number),
                     'Section': student.section,
                     'Roll No': student.roll_number,
@@ -1042,7 +1082,7 @@ async function exportAdminExcel() {
                     'Gender': getGenderLabel(student.gender)
                 };
                 
-                const subjects = getSubjects(student.class_number, examType);
+                const sSubjects = getSubjects(student.class_number, examType);
                 const studentMarks = marks.filter(m => m.student_id === student.id);
                 const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
                 
@@ -1053,7 +1093,7 @@ async function exportAdminExcel() {
                 let totalSum = 0;
                 let allEmpty = true;
                 
-                subjects.forEach(sub => {
+                sSubjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
                     if (mark) {
                         row[sub] = isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : mark.marks);
@@ -1293,16 +1333,24 @@ async function exportAdminPDF() {
         doc.text('School Data Portal - Report', 14, 15);
         doc.setFontSize(10);
         
-        if (type === 'marks') {
-            if (!schoolId || !classVal || !examType) {
+        if (type === 'marks' || type === 'combined_marks') {
+            if (type === 'marks' && (!schoolId || !classVal || !examType)) {
                 showToast('Please select School, Class, and Exam for marks PDF', 'warning');
                 hideLoading();
                 return;
             }
+            if (type === 'combined_marks' && (!classVal || !examType)) {
+                showToast('Please select Class and Exam for combined marks PDF', 'warning');
+                hideLoading();
+                return;
+            }
             
-            let stuQuery = supabase.from('students').select('*').eq('school_id', schoolId).eq('class_number', classVal);
+            let stuQuery = supabase.from('students').select('*').eq('class_number', classVal);
+            if (type === 'marks') {
+                stuQuery = stuQuery.eq('school_id', schoolId);
+            }
             if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
-            const { data: students, error: stuError } = await stuQuery.order('section').order('roll_number');
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('section').order('roll_number');
             if (stuError) throw stuError;
             
             if (!students || students.length === 0) {
@@ -1311,24 +1359,39 @@ async function exportAdminPDF() {
                 return;
             }
             
-            const studentIds = students.map(s => s.id);
-            const { data: marks, error: marksError } = await supabase
-                .from('exam_marks')
-                .select('*')
-                .eq('exam_type', examType)
-                .in('student_id', studentIds);
-            if (marksError) throw marksError;
+            let marks;
+            if (type === 'marks') {
+                const studentIds = students.map(s => s.id);
+                const { data: mData, error: marksError } = await supabase
+                    .from('exam_marks')
+                    .select('*')
+                    .eq('exam_type', examType)
+                    .in('student_id', studentIds);
+                if (marksError) throw marksError;
+                marks = mData;
+            } else {
+                const { data: mData, error: marksError } = await supabase
+                    .from('exam_marks')
+                    .select('*')
+                    .eq('class_number', classVal)
+                    .eq('exam_type', examType);
+                if (marksError) throw marksError;
+                
+                const studentIdsSet = new Set(students.map(s => s.id));
+                marks = mData.filter(m => studentIdsSet.has(m.student_id));
+            }
             
             const school = allSchools.find(s => s.id === schoolId);
-            const schoolName = school ? school.school_name : 'Unknown';
+            const schoolName = school ? school.school_name : 'All_Schools_Combined';
             const subjects = getSubjects(classVal, examType);
             
-            const head = [['Roll No', 'Name', 'Sec', ...subjects, 'Total', 'Result']];
+            const head = type === 'combined_marks'
+                ? [['School', 'Roll No', 'Name', 'Sec', ...subjects, 'Total', 'Result']]
+                : [['Roll No', 'Name', 'Sec', ...subjects, 'Total', 'Result']];
             const body = [];
             
             students.forEach(student => {
                 const studentMarks = marks.filter(m => m.student_id === student.id);
-                const row = [student.roll_number, student.student_name, student.section];
                 const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
                 
                 let anyFail = false;
@@ -1337,6 +1400,13 @@ async function exportAdminPDF() {
                 let anyAbsent = false;
                 let totalSum = 0;
                 let allEmpty = true;
+                
+                const sSchool = allSchools.find(s => s.id === student.school_id);
+                const sSchoolName = sSchool ? sSchool.school_name : 'Unknown';
+                
+                const row = type === 'combined_marks'
+                    ? [sSchoolName, student.roll_number, student.student_name, student.section]
+                    : [student.roll_number, student.student_name, student.section];
                 
                 subjects.forEach(sub => {
                     const mark = studentMarks.find(m => m.subject === sub);
@@ -1701,6 +1771,118 @@ async function generateReport() {
             
             html += `</tbody></table></div>`;
             const distHtml = getGradeDistributionHTML(students, marks, subjects, examType);
+            html += distHtml;
+            previewContainer.innerHTML = html;
+            
+        } else if (type === 'combined_marks') {
+            if (!classVal || !examType) {
+                previewContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <h4>Configure Filters</h4>
+                        <p>Select at least Class and Exam to view combined marks preview</p>
+                    </div>
+                `;
+                hideLoading();
+                return;
+            }
+            
+            let stuQuery = supabase.from('students').select('*').eq('class_number', classVal);
+            if (sectionVal) stuQuery = stuQuery.eq('section', sectionVal);
+            const { data: students, error: stuError } = await stuQuery.order('school_id').order('section').order('roll_number');
+            if (stuError) throw stuError;
+            
+            if (!students || students.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No student records found matching filters.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let marksQuery = supabase.from('exam_marks').select('*')
+                .eq('class_number', classVal)
+                .eq('exam_type', examType);
+            const { data: marks, error: marksError } = await marksQuery;
+            if (marksError) throw marksError;
+            
+            const studentIdsSet = new Set(students.map(s => s.id));
+            const filteredMarks = marks.filter(m => studentIdsSet.has(m.student_id));
+            
+            const subjects = getSubjects(classVal, examType);
+            
+            let html = `
+                <div style="margin-bottom: 1.5rem; background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px 20px; border-radius: 8px; font-weight: 500; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i> Combined Report: Showing ${students.length} students across all schools.
+                </div>
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School</th>
+                                <th>Roll No</th>
+                                <th>Name</th>
+                                <th>Class</th>
+                                <th>Sec</th>
+                                ${subjects.map(sub => `<th>${sub}</th>`).join('')}
+                                <th>Total</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            students.forEach(student => {
+                const school = allSchools.find(s => s.id === student.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                
+                const studentMarks = filteredMarks.filter(m => m.student_id === student.id);
+                const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+                
+                let anyFail = false;
+                let allPass = true;
+                let hasMarks = false;
+                let anyAbsent = false;
+                let totalSum = 0;
+                let allEmpty = true;
+                
+                let rowHtml = `
+                    <tr>
+                        <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+                        <td>${student.roll_number}</td>
+                        <td>${student.student_name}</td>
+                        <td>${classDisplayName(student.class_number)}</td>
+                        <td>${student.section}</td>
+                `;
+                
+                subjects.forEach(sub => {
+                    const mark = studentMarks.find(m => m.subject === sub);
+                    const val = mark ? (isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : (mark.marks !== null ? mark.marks : ''))) : '';
+                    if (val !== '') hasMarks = true;
+                    if (!isGraded) {
+                        if (mark && mark.pass_fail === 'AB') {
+                            anyAbsent = true;
+                        } else if (mark && mark.marks !== null) {
+                            totalSum += mark.marks;
+                            allEmpty = false;
+                        }
+                        if (mark && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+                    }
+                    if (!isGraded && (!mark || !isPassingGrade(mark.pass_fail))) allPass = false;
+                    
+                    rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
+                });
+                
+                const totalVal = isGraded ? '-' : (allEmpty ? '-' : totalSum);
+                let result = '-';
+                if (hasMarks) {
+                    result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyAbsent ? '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>')));
+                }
+                
+                rowHtml += `<td>${totalVal}</td><td>${result}</td></tr>`;
+                html += rowHtml;
+            });
+            
+            html += `</tbody></table></div>`;
+            const distHtml = getGradeDistributionHTML(students, filteredMarks, subjects, examType);
             html += distHtml;
             previewContainer.innerHTML = html;
             

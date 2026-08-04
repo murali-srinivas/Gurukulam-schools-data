@@ -146,6 +146,9 @@ Then open `http://localhost:3000` in your browser.
 * **Staff Designation Dropdown Menu**: Replaced the custom text input fields for "Designation" with an explicit, unified dropdown menu containing 21 pre-selected options (Principal, Lecturers, Teachers, Office Staff, Helpers, etc.) across both the admin and school dashboards.
 * **Staff Phone Number Fields**: Added Phone Number - 1 and Phone Number - 2 input fields in both school and admin dashboard modals immediately following the Qualifications Details panel. These are saved to Supabase under the `phone_1` and `phone_2` columns.
 * **Student Genders (Boy/Girl)**: Updated the gender selection dropdowns across the application (both admin modals and school dashboard entry grids) to display **Boy** and **Girl** instead of the previous Male/Female/Other selections. Handled mapping transparently in the frontend (mapping "Boy" to "Male" and "Girl" to "Female" when saving, and vice versa when loading) to perfectly preserve compatibility with database-level CHECK constraints.
+* **Dynamic Student Count (Over 40)**: Added an "Add Student Row" button in the school dashboard student grid to dynamically append rows beyond the initial 40 limit. The bulk paste functionality also dynamically appends new rows as needed, and the roll number check constraints were updated to permit any roll number >= 1.
+* **All Schools Combined Marks Report**: Inserted an "All Schools Combined Marks" option to the Report Type selection dropdown in the Admin login's Reports panel. This report fetches students and marks across all 171 schools for the selected Class, Section, and Exam, and renders a unified overview with a dedicated School column, alongside combined subject-wise analytics (including subject-wise pass %, subject average %, and highest mark of each subject) in previews, Excel, and PDF exports.
+
 
 ### Search & Filtering
 * **Admin Dashboard**:
