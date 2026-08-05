@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS students (
     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
     class_number TEXT NOT NULL CHECK (class_number IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jr Inter MPC', 'Jr Inter BiPC', 'Jr Inter CEC', 'Jr Inter HEC', 'Jr Inter MEC', 'Jr Inter A&T', 'Jr Inter CGA', 'Sr Inter MPC', 'Sr Inter BiPC', 'Sr Inter CEC', 'Sr Inter HEC', 'Sr Inter MEC', 'Sr Inter A&T', 'Sr Inter CGA')),
     section TEXT NOT NULL CHECK (section IN ('A', 'B')),
-    roll_number INTEGER NOT NULL CHECK (roll_number BETWEEN 1 AND 40),
+    roll_number INTEGER NOT NULL CHECK (roll_number >= 1),
     student_name TEXT NOT NULL DEFAULT '',
     gender TEXT NOT NULL DEFAULT '' CHECK (gender IN ('', 'Boy', 'Girl')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -215,6 +215,30 @@ ON CONFLICT (username) DO NOTHING;
 -- ALTER TABLE students ADD CONSTRAINT students_gender_check CHECK (gender IN ('', 'Boy', 'Girl'));
 -- UPDATE students SET gender = 'Boy' WHERE gender IN ('Male', 'Other');
 -- UPDATE students SET gender = 'Girl' WHERE gender = 'Female';
+
+-- ============================================
+-- MIGRATION: Remove max roll number limit (max 40 restriction)
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- ALTER TABLE students DROP CONSTRAINT IF EXISTS students_roll_number_check;
+-- ALTER TABLE students ADD CONSTRAINT students_roll_number_check CHECK (roll_number >= 1);
+
+-- ============================================
+-- MIGRATION: Create staffing_particulars table
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- CREATE TABLE IF NOT EXISTS staffing_particulars (
+--     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+--     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+--     post_name TEXT NOT NULL,
+--     status TEXT NOT NULL CHECK (status IN ('Filled', 'Vacant')),
+--     employee_name TEXT,
+--     employment_type TEXT CHECK (employment_type IN ('Regular', 'Out Sourcing', 'Contract', 'MTS', 'Others')),
+--     joining_date DATE,
+--     remarks TEXT,
+--     created_at TIMESTAMPTZ DEFAULT NOW()
+-- );
+
 
 
 

@@ -52,6 +52,7 @@ function switchTab(tabName) {
         'schools': 'Manage Schools',
         'students': 'Students',
         'staff': 'Staff Management',
+        'staffing-particulars': 'Staffing Particulars',
         'marks': 'Exam Marks',
         'reports': 'Reports & Export'
     };
@@ -67,6 +68,17 @@ function switchTab(tabName) {
         const searchInput = document.getElementById('staff-search-input');
         if (searchInput) searchInput.value = '';
         loadAdminStaff();
+    } else if (tabName === 'staffing-particulars') {
+        const schoolSearchInput = document.getElementById('staffing-school-search');
+        if (schoolSearchInput) {
+            schoolSearchInput.value = '';
+            filterSchoolDropdownForStaffing();
+        }
+        const searchInput = document.getElementById('staffing-search-input');
+        if (searchInput) searchInput.value = '';
+        const statusSelect = document.getElementById('staffing-filter-status');
+        if (statusSelect) statusSelect.value = '';
+        loadAdminStaffingTable();
     } else if (tabName === 'marks') {
         const searchInputMarks = document.getElementById('marks-school-search');
         if (searchInputMarks) {
@@ -105,6 +117,8 @@ async function loadSchoolsList() {
         populateFilterDropdown('staff-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('admin-staff-school-select', schoolOptions, 'id', 'name');
         populateFilterDropdown('overview-school-select', schoolOptions, 'id', 'name');
+        populateFilterDropdown('staffing-filter-school', schoolOptions, 'id', 'name');
+        populateFilterDropdown('staffing-school-select', schoolOptions, 'id', 'name');
         
         const searchInputOverview = document.getElementById('overview-school-search');
         if (searchInputOverview) searchInputOverview.value = '';
@@ -112,6 +126,8 @@ async function loadSchoolsList() {
         if (searchInputMarks) searchInputMarks.value = '';
         const searchInputReports = document.getElementById('report-school-search');
         if (searchInputReports) searchInputReports.value = '';
+        const searchInputStaffing = document.getElementById('staffing-school-search');
+        if (searchInputStaffing) searchInputStaffing.value = '';
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
@@ -2365,6 +2381,308 @@ async function loadSelectedSchoolStats() {
     } finally {
         hideLoading();
     }
+}
+
+let adminStaffingData = [];
+
+async function loadAdminStaffingTable() {
+    showLoading();
+    try {
+        const schoolId = document.getElementById('staffing-filter-school').value;
+        let query = supabase.from('staffing_particulars').select('*');
+        if (schoolId) {
+            query = query.eq('school_id', schoolId);
+        }
+        
+        const { data, error } = await query.order('post_name');
+        if (error) throw error;
+        adminStaffingData = data || [];
+        renderAdminStaffingTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderAdminStaffingTable() {
+    const tbody = document.getElementById('staffing-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const searchVal = document.getElementById('staffing-search-input').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('staffing-filter-status').value;
+    
+    const filtered = adminStaffingData.filter(item => {
+        const matchesStatus = !statusFilter || item.status === statusFilter;
+        const matchesSearch = !searchVal || 
+            item.post_name.toLowerCase().includes(searchVal) ||
+            (item.employee_name && item.employee_name.toLowerCase().includes(searchVal)) ||
+            (item.remarks && item.remarks.toLowerCase().includes(searchVal));
+        return matchesStatus && matchesSearch;
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center">No staffing records found</td></tr>`;
+        return;
+    }
+    
+    filtered.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        
+        const badgeClass = item.status === 'Filled' ? 'badge-pass' : 'badge-fail';
+        const statusHtml = `<span class="badge ${badgeClass}">${item.status}</span>`;
+        
+        const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
+        
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+            <td style="font-weight: 500;">${item.post_name}</td>
+            <td>${statusHtml}</td>
+            <td>${item.employee_name || '-'}</td>
+            <td>${item.employment_type || '-'}</td>
+            <td>${formattedDate}</td>
+            <td>${item.remarks || '-'}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="openAdminStaffingModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminStaffing('${item.id}', '${item.post_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openAdminStaffingModal(id = null) {
+    const modal = document.getElementById('staffing-modal');
+    const title = document.getElementById('staffing-modal-title');
+    const form = document.getElementById('staffing-form');
+    
+    form.reset();
+    document.getElementById('staffing-edit-id').value = id || '';
+    
+    if (id) {
+        title.textContent = 'Edit Staffing Position';
+        const item = adminStaffingData.find(x => x.id === id);
+        if (item) {
+            document.getElementById('staffing-school-select').value = item.school_id;
+            document.getElementById('staffing-post-name').value = item.post_name;
+            document.getElementById('staffing-status').value = item.status;
+            document.getElementById('staffing-employee-name').value = item.employee_name || '';
+            document.getElementById('staffing-employment-type').value = item.employment_type || '';
+            document.getElementById('staffing-joining-date').value = item.joining_date || '';
+            document.getElementById('staffing-remarks').value = item.remarks || '';
+        }
+    } else {
+        title.textContent = 'Add Staffing Position';
+        const schoolFilter = document.getElementById('staffing-filter-school').value;
+        if (schoolFilter) {
+            document.getElementById('staffing-school-select').value = schoolFilter;
+        }
+    }
+    
+    toggleAdminStaffingFields();
+    modal.classList.remove('hidden');
+}
+
+function closeAdminStaffingModal() {
+    document.getElementById('staffing-modal').classList.add('hidden');
+}
+
+function toggleAdminStaffingFields() {
+    const status = document.getElementById('staffing-status').value;
+    const fieldsContainer = document.getElementById('staffing-filled-fields');
+    const empNameInput = document.getElementById('staffing-employee-name');
+    const empTypeSelect = document.getElementById('staffing-employment-type');
+    const joinDateInput = document.getElementById('staffing-joining-date');
+    
+    if (status === 'Filled') {
+        fieldsContainer.style.display = 'block';
+        empNameInput.required = true;
+        empTypeSelect.required = true;
+        joinDateInput.required = true;
+    } else {
+        fieldsContainer.style.display = 'none';
+        empNameInput.required = false;
+        empTypeSelect.required = false;
+        joinDateInput.required = false;
+        
+        empNameInput.value = '';
+        empTypeSelect.value = '';
+        joinDateInput.value = '';
+    }
+}
+
+async function saveAdminStaffing(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('staffing-edit-id').value;
+    const schoolId = document.getElementById('staffing-school-select').value;
+    const postName = document.getElementById('staffing-post-name').value.trim();
+    const status = document.getElementById('staffing-status').value;
+    const employeeName = document.getElementById('staffing-employee-name').value.trim();
+    const employmentType = document.getElementById('staffing-employment-type').value;
+    const joiningDate = document.getElementById('staffing-joining-date').value;
+    const remarks = document.getElementById('staffing-remarks').value.trim();
+    
+    if (!schoolId || !postName || !status) {
+        showToast('Please fill all required fields.', 'warning');
+        return;
+    }
+    
+    if (status === 'Filled' && (!employeeName || !employmentType || !joiningDate)) {
+        showToast('Please fill all employee details for filled status.', 'warning');
+        return;
+    }
+    
+    const payload = {
+        school_id: schoolId,
+        post_name: postName,
+        status: status,
+        employee_name: status === 'Filled' ? employeeName : null,
+        employment_type: status === 'Filled' ? employmentType : null,
+        joining_date: status === 'Filled' ? joiningDate : null,
+        remarks: remarks || null
+    };
+    
+    showLoading();
+    try {
+        if (id) {
+            const { error } = await supabase
+                .from('staffing_particulars')
+                .update(payload)
+                .eq('id', id);
+            if (error) throw error;
+            showToast('Staffing position updated successfully', 'success');
+        } else {
+            const { error } = await supabase
+                .from('staffing_particulars')
+                .insert(payload);
+            if (error) throw error;
+            showToast('Staffing position added successfully', 'success');
+        }
+        closeAdminStaffingModal();
+        loadAdminStaffingTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function deleteAdminStaffing(id, postName) {
+    if (!confirm(`Are you sure you want to delete staffing position: ${postName}?`)) return;
+    
+    showLoading();
+    supabase
+        .from('staffing_particulars')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+            hideLoading();
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('Staffing position deleted successfully', 'success');
+                loadAdminStaffingTable();
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast(err.message, 'error');
+        });
+}
+
+function filterSchoolDropdownForStaffing() {
+    const searchVal = document.getElementById('staffing-school-search').value.toLowerCase();
+    const select = document.getElementById('staffing-filter-school');
+    
+    select.innerHTML = '<option value="">All Schools</option>';
+    
+    const filtered = allSchools.filter(school => 
+        school.school_name.toLowerCase().includes(searchVal)
+    );
+    
+    filtered.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school.school_name;
+        select.appendChild(option);
+    });
+}
+
+async function exportAdminStaffingExcel() {
+    if (adminStaffingData.length === 0) {
+        showToast('No staffing records found for export', 'warning');
+        return;
+    }
+    
+    const reportData = adminStaffingData.map((item, index) => {
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        return {
+            'S.No': index + 1,
+            'Name of the School': schoolName,
+            'Name of the Post': item.post_name,
+            'Status': item.status,
+            'Name of the Employee': item.employee_name || '-',
+            'Employment Type': item.employment_type || '-',
+            'Date of Joining': item.joining_date || '-',
+            'Remarks': item.remarks || '-'
+        };
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Staffing Particulars");
+    
+    const fileName = `Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    showToast('Staffing particulars Excel export successful', 'success');
+}
+
+async function exportAdminStaffingPDF() {
+    if (adminStaffingData.length === 0) {
+        showToast('No staffing records found for export', 'warning');
+        return;
+    }
+    
+    const doc = new jspdf.jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.text('School Data Portal - Staffing Particulars Report', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
+    
+    const head = [['S.No', 'School Name', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Remarks']];
+    const body = adminStaffingData.map((item, index) => {
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        return [
+            index + 1,
+            schoolName,
+            item.post_name,
+            item.status,
+            item.employee_name || '-',
+            item.employment_type || '-',
+            item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+            item.remarks || '-'
+        ];
+    });
+    
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: 28,
+        styles: { fontSize: 8 }
+    });
+    
+    doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('Staffing particulars PDF export successful', 'success');
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);

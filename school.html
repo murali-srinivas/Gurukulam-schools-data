@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=4.8">
+  <link rel="stylesheet" href="css/styles.css?v=4.9">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -31,6 +31,9 @@
       </div>
       <div class="nav-item" onclick="switchTab('staff')" id="nav-staff">
         <i class="fas fa-chalkboard-teacher"></i> Staff Profile
+      </div>
+      <div class="nav-item" onclick="switchTab('staffing-particulars')" id="nav-staffing-particulars">
+        <i class="fas fa-clipboard-list"></i> Staffing Particulars
       </div>
       <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
         <i class="fas fa-edit"></i> Enter Marks
@@ -228,6 +231,51 @@
                 </tr>
               </thead>
               <tbody id="staff-table-body">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STAFFING PARTICULARS -->
+      <div class="tab-pane" id="tab-staffing-particulars">
+        <div class="d-flex justify-between align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title"><i class="fas fa-clipboard-list"></i> Staffing Particulars</h2>
+          <button class="btn btn-primary" onclick="openStaffingModal()">
+            <i class="fas fa-plus"></i> Add Staffing Position
+          </button>
+        </div>
+        <div class="card">
+          <div class="filter-bar" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
+            <div class="filter-group" style="max-width: 300px; flex-grow: 1;">
+              <label>Search Post / Employee</label>
+              <input type="text" id="staffing-search-input" class="form-input" placeholder="Search post name, employee..." oninput="renderStaffingTable()">
+            </div>
+            <div class="filter-group" style="max-width: 200px;">
+              <label>Status</label>
+              <select id="staffing-filter-status" class="form-select" onchange="renderStaffingTable()">
+                <option value="">All Positions</option>
+                <option value="Filled">Filled</option>
+                <option value="Vacant">Vacant</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-container standalone">
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Name of the Post</th>
+                  <th>Filled/Vacant</th>
+                  <th>Name of the Employee</th>
+                  <th>Regular/Out Sourcing/Contract/MTS/Others</th>
+                  <th>Date of Joining in Institution</th>
+                  <th>Remarks</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staffing-table-body">
                 <!-- Will be populated by JS -->
               </tbody>
             </table>
@@ -463,11 +511,69 @@
   </div>
 </div>
 
+<!-- MODAL: Add/Edit Staffing Particulars -->
+<div class="modal-overlay hidden" id="staffing-modal">
+  <div class="modal" style="max-width: 550px;">
+    <div class="modal-header">
+      <h3 id="staffing-modal-title">Add Staffing Position</h3>
+      <button class="modal-close" onclick="closeStaffingModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="staffing-form" onsubmit="saveStaffing(event)">
+        <input type="hidden" id="staffing-edit-id">
+        <div class="form-group">
+          <label class="form-label">Name of the Post</label>
+          <input type="text" class="form-input" id="staffing-post-name" required placeholder="e.g. TGT(Science), Senior Assistant">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Position Status</label>
+          <select class="form-select" id="staffing-status" required onchange="toggleStaffingFields()">
+            <option value="Filled">Filled</option>
+            <option value="Vacant">Vacant</option>
+          </select>
+        </div>
+        <div id="staffing-filled-fields">
+          <div class="form-group">
+            <label class="form-label">Name of the Employee</label>
+            <input type="text" class="form-input" id="staffing-employee-name" placeholder="Enter employee full name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type of Employment</label>
+            <select class="form-select" id="staffing-employment-type">
+              <option value="">Select Employment Type</option>
+              <option value="Regular">Regular</option>
+              <option value="Out Sourcing">Out Sourcing</option>
+              <option value="Contract">Contract</option>
+              <option value="MTS">MTS</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Joining in Institution</label>
+            <input type="date" class="form-input" id="staffing-joining-date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Remarks</label>
+          <input type="text" class="form-input" id="staffing-remarks" placeholder="Enter optional remarks">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeStaffingModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('staffing-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Position
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=4.8"></script>
-<script src="js/auth.js?v=4.8"></script>
-<script src="js/school.js?v=4.8"></script>
+<script src="js/supabase-config.js?v=4.9"></script>
+<script src="js/auth.js?v=4.9"></script>
+<script src="js/school.js?v=4.9"></script>
 </body>
 </html>
