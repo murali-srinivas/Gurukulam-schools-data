@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=4.9">
+  <link rel="stylesheet" href="css/styles.css?v=5.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -523,7 +523,52 @@
         <input type="hidden" id="staffing-edit-id">
         <div class="form-group">
           <label class="form-label">Name of the Post</label>
-          <input type="text" class="form-input" id="staffing-post-name" required placeholder="e.g. TGT(Science), Senior Assistant">
+          <select class="form-select" id="staffing-post-name" required>
+            <option value="">Select Post</option>
+            <option value="Principals(C)">Principals(C)</option>
+            <option value="Principals(S)">Principals(S)</option>
+            <option value="JL-Telugu">JL-Telugu</option>
+            <option value="JL-Hindi">JL-Hindi</option>
+            <option value="JL-English">JL-English</option>
+            <option value="JL-Maths">JL-Maths</option>
+            <option value="JL-Physics">JL-Physics</option>
+            <option value="JL-Chemistry">JL-Chemistry</option>
+            <option value="JL-Botany">JL-Botany</option>
+            <option value="JL-Zoology">JL-Zoology</option>
+            <option value="JL-History">JL-History</option>
+            <option value="JL-Commerce">JL-Commerce</option>
+            <option value="JL-Civics">JL-Civics</option>
+            <option value="JL-Economics">JL-Economics</option>
+            <option value="JL-Vocational">JL-Vocational</option>
+            <option value="PD-College">PD-College</option>
+            <option value="PGT-Telugu">PGT-Telugu</option>
+            <option value="PGT-Hindi">PGT-Hindi</option>
+            <option value="PGT-English">PGT-English</option>
+            <option value="PGT-Maths">PGT-Maths</option>
+            <option value="PGT-PS">PGT-PS</option>
+            <option value="PGT-NS">PGT-NS</option>
+            <option value="PGT-SS">PGT-SS</option>
+            <option value="PD-School">PD-School</option>
+            <option value="TGT-Telugu">TGT-Telugu</option>
+            <option value="TGT-Hindi">TGT-Hindi</option>
+            <option value="TGT-English">TGT-English</option>
+            <option value="TGT-Maths">TGT-Maths</option>
+            <option value="TGT-Science">TGT-Science</option>
+            <option value="TGT-Social">TGT-Social</option>
+            <option value="PET">PET</option>
+            <option value="Art & Craft">Art & Craft</option>
+            <option value="Librarian">Librarian</option>
+            <option value="Supndt">Supndt</option>
+            <option value="Sr Asst">Sr Asst</option>
+            <option value="Jr Asst">Jr Asst</option>
+            <option value="DEO">DEO</option>
+            <option value="Record Asst">Record Asst</option>
+            <option value="Attender">Attender</option>
+            <option value="Cook">Cook</option>
+            <option value="Kitchen Helper">Kitchen Helper</option>
+            <option value="MPW">MPW</option>
+            <option value="Ayah">Ayah</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Position Status</label>
@@ -572,8 +617,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=4.9"></script>
-<script src="js/auth.js?v=4.9"></script>
-<script src="js/school.js?v=4.9"></script>
+<script src="js/supabase-config.js?v=5.0"></script>
+<script src="js/auth.js?v=5.0"></script>
+<script src="js/school.js?v=5.0"></script>
 </body>
 </html>
