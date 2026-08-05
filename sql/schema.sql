@@ -238,6 +238,12 @@ ON CONFLICT (username) DO NOTHING;
 --     remarks TEXT,
 --     created_at TIMESTAMPTZ DEFAULT NOW()
 -- );
+--
+-- ALTER TABLE staffing_particulars ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY "Allow all on staffing_particulars" ON staffing_particulars
+--     FOR ALL USING (true) WITH CHECK (true);
+
 
 
 
