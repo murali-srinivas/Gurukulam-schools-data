@@ -242,7 +242,14 @@ function getMaxMarks(examType, subject = '', classVal = '') {
         return 50;
     }
     
-    return type.startsWith('FA') ? 50 : 100;
+    if (type.startsWith('FA')) {
+        if (String(classVal).trim() === '10') {
+            return 35;
+        }
+        return 50;
+    }
+    
+    return 100;
 }
 
 function getPassMark(examType, subject, classVal = '') {
@@ -253,26 +260,34 @@ function getPassMark(examType, subject, classVal = '') {
     
     const numClass = parseInt(classVal);
     const is6to10 = !isNaN(numClass) && numClass >= 6 && numClass <= 10;
+    const isFA = type.startsWith('FA');
+    const isHindi = subject === 'Hindi';
     
-    if (is6to10 && subject === 'Hindi') {
+    if (is6to10 && isHindi) {
         if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL', 'SA1', 'SA2'].includes(type)) {
             return 20;
         }
-        if (type.startsWith('FA')) {
+        if (isFA) {
+            if (String(classVal).trim() === '10') {
+                return 7;
+            }
             return 10;
         }
     }
     
     if (['QUARTERLY', 'HALF YEARLY', 'PREFINAL'].includes(type)) return 35;
-    const isFA = type.startsWith('FA');
-    const isHindi = subject === 'Hindi';
     
     // PS and NS in SA1/SA2: if max marks is 50, pass mark is 18 (same as FA where max marks is 50)
     if (['SA1', 'SA2'].includes(type) && ['PS', 'NS'].includes(subject)) {
         return 18;
     }
     
-    if (isFA) return isHindi ? 10 : 18;
+    if (isFA) {
+        if (String(classVal).trim() === '10') {
+            return isHindi ? 7 : 12;
+        }
+        return isHindi ? 10 : 18;
+    }
     return isHindi ? 20 : 35;
 }
 
@@ -291,6 +306,10 @@ function calculatePassFail(marks, examType, subject, classVal = '') {
     if (maxMarks === 25) {
         if (marksVal >= 21) return 'Grade-A';
         if (marksVal >= 16) return 'Grade-B';
+        return 'Grade-C';
+    } else if (maxMarks === 35) {
+        if (marksVal >= 28) return 'Grade-A';
+        if (marksVal >= 21) return 'Grade-B';
         return 'Grade-C';
     } else if (maxMarks === 50) {
         if (marksVal >= 41) return 'Grade-A';
