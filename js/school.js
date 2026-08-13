@@ -1407,7 +1407,7 @@ function renderStaffingTable() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center">No staffing records found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center">No staffing records found</td></tr>`;
     return;
   }
   
@@ -1426,6 +1426,9 @@ function renderStaffingTable() {
       <td>${item.employee_name || '-'}</td>
       <td>${item.employment_type || '-'}</td>
       <td>${formattedDate}</td>
+      <td>${item.aadhar_no || '-'}</td>
+      <td>${item.apcos_id || '-'}</td>
+      <td>${item.days_present !== null && item.days_present !== undefined ? item.days_present : '-'}</td>
       <td>${item.remarks || '-'}</td>
       <td>
         <div class="btn-group">
@@ -1455,6 +1458,9 @@ function openStaffingModal(id = null) {
       document.getElementById('staffing-employee-name').value = item.employee_name || '';
       document.getElementById('staffing-employment-type').value = item.employment_type || '';
       document.getElementById('staffing-joining-date').value = item.joining_date || '';
+      document.getElementById('staffing-aadhar').value = item.aadhar_no || '';
+      document.getElementById('staffing-apcos').value = item.apcos_id || '';
+      document.getElementById('staffing-days-present').value = item.days_present !== null && item.days_present !== undefined ? item.days_present : '';
       document.getElementById('staffing-remarks').value = item.remarks || '';
     }
   } else {
@@ -1475,6 +1481,9 @@ function toggleStaffingFields() {
   const empNameInput = document.getElementById('staffing-employee-name');
   const empTypeSelect = document.getElementById('staffing-employment-type');
   const joinDateInput = document.getElementById('staffing-joining-date');
+  const aadharInput = document.getElementById('staffing-aadhar');
+  const apcosInput = document.getElementById('staffing-apcos');
+  const daysPresentInput = document.getElementById('staffing-days-present');
   
   if (status === 'Filled') {
     fieldsContainer.style.display = 'block';
@@ -1491,6 +1500,9 @@ function toggleStaffingFields() {
     empNameInput.value = '';
     empTypeSelect.value = '';
     joinDateInput.value = '';
+    aadharInput.value = '';
+    apcosInput.value = '';
+    daysPresentInput.value = '';
   }
 }
 
@@ -1503,6 +1515,9 @@ async function saveStaffing(event) {
   const employeeName = document.getElementById('staffing-employee-name').value.trim();
   const employmentType = document.getElementById('staffing-employment-type').value;
   const joiningDate = document.getElementById('staffing-joining-date').value;
+  const aadharNo = document.getElementById('staffing-aadhar').value.trim();
+  const apcosId = document.getElementById('staffing-apcos').value.trim();
+  const daysPresent = document.getElementById('staffing-days-present').value;
   const remarks = document.getElementById('staffing-remarks').value.trim();
   
   if (!postName || !status) {
@@ -1510,9 +1525,15 @@ async function saveStaffing(event) {
     return;
   }
   
-  if (status === 'Filled' && (!employeeName || !employmentType || !joiningDate)) {
-    showToast('Please fill all employee details for filled status.', 'warning');
-    return;
+  if (status === 'Filled') {
+    if (!employeeName || !employmentType || !joiningDate) {
+      showToast('Please fill all employee details for filled status.', 'warning');
+      return;
+    }
+    if (aadharNo && aadharNo.length !== 12) {
+      showToast('Aadhar number must be exactly 12 digits.', 'warning');
+      return;
+    }
   }
   
   const payload = {
@@ -1522,6 +1543,9 @@ async function saveStaffing(event) {
     employee_name: status === 'Filled' ? employeeName : null,
     employment_type: status === 'Filled' ? employmentType : null,
     joining_date: status === 'Filled' ? joiningDate : null,
+    aadhar_no: status === 'Filled' ? (aadharNo || null) : null,
+    apcos_id: status === 'Filled' ? (apcosId || null) : null,
+    days_present: status === 'Filled' ? (daysPresent ? parseFloat(daysPresent) : null) : null,
     remarks: remarks || null
   };
   

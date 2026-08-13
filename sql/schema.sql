@@ -244,6 +244,19 @@ ON CONFLICT (username) DO NOTHING;
 -- CREATE POLICY "Allow all on staffing_particulars" ON staffing_particulars
 --     FOR ALL USING (true) WITH CHECK (true);
 
+-- ============================================
+-- MIGRATION: Add Aadhar, APCOS ID, and Days Present to staffing_particulars
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- ALTER TABLE staffing_particulars ADD COLUMN IF NOT EXISTS aadhar_no VARCHAR(12);
+-- ALTER TABLE staffing_particulars ADD COLUMN IF NOT EXISTS apcos_id VARCHAR(50);
+-- ALTER TABLE staffing_particulars ADD COLUMN IF NOT EXISTS days_present NUMERIC;
+--
+-- ALTER TABLE staffing_particulars DROP CONSTRAINT IF EXISTS staffing_particulars_aadhar_check;
+-- ALTER TABLE staffing_particulars ADD CONSTRAINT staffing_particulars_aadhar_check 
+--     CHECK (aadhar_no IS NULL OR aadhar_no ~ '^\d{12}$');
+
+
 
 
 
