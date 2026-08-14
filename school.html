@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=5.3">
+  <link rel="stylesheet" href="css/styles.css?v=5.4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -212,9 +212,6 @@
       <div class="tab-pane" id="tab-staff">
         <div class="d-flex justify-between align-center mb-6 flex-wrap gap-4">
           <h2 class="section-title"><i class="fas fa-chalkboard-teacher"></i> Staff Profile</h2>
-          <button class="btn btn-primary" onclick="openStaffModal()">
-            <i class="fas fa-plus"></i> Add Staff Member
-          </button>
         </div>
         <div class="card">
           <div class="filter-bar" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
@@ -234,7 +231,6 @@
                   <th>Subject</th>
                   <th>Joined in Service</th>
                   <th>Working at Institution</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="staff-table-body">
@@ -297,204 +293,6 @@
   </main>
 </div>
 
-<!-- MODAL: Add/Edit Staff -->
-<div class="modal-overlay hidden" id="staff-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="staff-modal-title">Add Staff Member</h3>
-      <button class="modal-close" onclick="closeStaffModal()"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <form id="staff-form" onsubmit="saveStaff(event)">
-        <input type="hidden" id="staff-edit-id">
-        <div class="form-group">
-          <label class="form-label">Name of the Staff</label>
-          <input type="text" class="form-input" id="staff-name" required placeholder="Enter full name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Designation</label>
-          <select class="form-select" id="staff-designation" required>
-            <option value="">Select Designation</option>
-            <option value="Principal(College)">Principal(College)</option>
-            <option value="Principal(School)">Principal(School)</option>
-            <option value="Junior Lecturer">Junior Lecturer</option>
-            <option value="PGT">PGT</option>
-            <option value="TGT">TGT</option>
-            <option value="PD(Col)">PD(Col)</option>
-            <option value="PD(Sch)">PD(Sch)</option>
-            <option value="PET">PET</option>
-            <option value="Art & Craft">Art & Craft</option>
-            <option value="Librarian">Librarian</option>
-            <option value="Supndt">Supndt</option>
-            <option value="Sr Asst">Sr Asst</option>
-            <option value="Jr Asst">Jr Asst</option>
-            <option value="DEO">DEO</option>
-            <option value="Record Asst">Record Asst</option>
-            <option value="Lab Asst">Lab Asst</option>
-            <option value="Attender">Attender</option>
-            <option value="Cook">Cook</option>
-            <option value="Kitchen Helper">Kitchen Helper</option>
-            <option value="MPW">MPW</option>
-            <option value="Ayah">Ayah</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Employment Type</label>
-          <select class="form-select" id="staff-emp-type" required>
-            <option value="Regular">Regular</option>
-            <option value="Out Sourcing">Out Sourcing</option>
-            <option value="Contract">Contract</option>
-            <option value="MTS">MTS</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Subject</label>
-          <input type="text" class="form-input" id="staff-subject" required placeholder="e.g. Mathematics, English">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Qualifications Details</label>
-          <div class="table-container" style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); padding: 10px;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                  <th style="padding: 6px; text-align: left; width: 25%; color: var(--text-muted);">Qual</th>
-                  <th style="padding: 6px; text-align: left; width: 20%; color: var(--text-muted);">Type</th>
-                  <th style="padding: 6px; text-align: left; width: 40%; color: var(--text-muted);">Subjects</th>
-                  <th style="padding: 6px; text-align: left; width: 15%; color: var(--text-muted);">Marks %</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-inter"> Inter
-                    </label>
-                  </td>
-                  <td style="padding: 6px;" colspan="3"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-degree" onchange="toggleQualRow(this)"> Degree
-                    </label>
-                  </td>
-                  <td style="padding: 6px;">
-                    <select class="form-select form-input-sm" id="staff-qual-degree-type" disabled style="background-color: #1a1a35; color: #fff; padding: 4px 8px;">
-                      <option value="BSc">BSc</option>
-                      <option value="BA">BA</option>
-                      <option value="B.Com">B.Com</option>
-                      <option value="B.Tech">B.Tech</option>
-                      <option value="Vidwan">Vidwan</option>
-                      <option value="Others">Others</option>
-                    </select>
-                  </td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-degree-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-degree-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-pg" onchange="toggleQualRow(this)"> PG
-                    </label>
-                  </td>
-                  <td style="padding: 6px;">
-                    <select class="form-select form-input-sm" id="staff-qual-pg-type" disabled style="background-color: #1a1a35; color: #fff; padding: 4px 8px;">
-                      <option value="MSc">MSc</option>
-                      <option value="MA">MA</option>
-                      <option value="MCom">MCom</option>
-                      <option value="MTech">MTech</option>
-                      <option value="Sahitya Ratna">Sahitya Ratna</option>
-                      <option value="MBA">MBA</option>
-                      <option value="Others">Others</option>
-                    </select>
-                  </td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pg-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pg-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-bed" onchange="toggleQualRow(this)"> B.Ed
-                    </label>
-                  </td>
-                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-bed-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-bed-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-pandit" onchange="toggleQualRow(this)"> Pandit Tr.
-                    </label>
-                  </td>
-                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pandit-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-pandit-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-tet1" onchange="toggleQualRow(this)"> TET P1 Qual.
-                    </label>
-                  </td>
-                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet1-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet1-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-tet2" onchange="toggleQualRow(this)"> TET P2 Qual.
-                    </label>
-                  </td>
-                  <td style="padding: 6px;"><span class="text-muted" style="font-size: 0.75rem;">(N/A)</span></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet2-sub" placeholder="Subjects" disabled></td>
-                  <td style="padding: 6px;"><input type="text" class="form-input form-input-sm" id="staff-qual-tet2-marks" placeholder="%" disabled></td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px;">
-                    <label class="checkbox-label" style="font-size: 0.8rem;">
-                      <input type="checkbox" id="staff-qual-others" onchange="toggleQualRow(this)"> Others
-                    </label>
-                  </td>
-                  <td style="padding: 6px;" colspan="3">
-                    <input type="text" class="form-input form-input-sm" id="staff-qual-others-desc" placeholder="Specify qual & subjects" disabled>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Phone Number - 1</label>
-            <input type="tel" class="form-input" id="staff-phone1" placeholder="Enter primary phone number" pattern="[0-9]{10}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone Number - 2</label>
-            <input type="tel" class="form-input" id="staff-phone2" placeholder="Enter secondary phone number" pattern="[0-9]{10}">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Joined in the Service</label>
-            <input type="date" class="form-input" id="staff-joined-service">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Working at Institution</label>
-            <input type="date" class="form-input" id="staff-joined-institution">
-          </div>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeStaffModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="document.getElementById('staff-form').requestSubmit()">
-        <i class="fas fa-save"></i> Save Staff
-      </button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL: Bulk Paste Student Names -->
 <div class="modal-overlay hidden" id="bulk-paste-modal">
@@ -639,8 +437,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=5.3"></script>
-<script src="js/auth.js?v=5.3"></script>
-<script src="js/school.js?v=5.3"></script>
+<script src="js/supabase-config.js?v=5.4"></script>
+<script src="js/auth.js?v=5.4"></script>
+<script src="js/school.js?v=5.4"></script>
 </body>
 </html>

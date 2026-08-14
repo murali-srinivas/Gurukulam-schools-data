@@ -1230,7 +1230,7 @@ function renderStaffTable() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No staff records found. Click Add to create one.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No staff records found.</td></tr>';
     return;
   }
   
@@ -1249,12 +1249,6 @@ function renderStaffTable() {
       <td>${s.subject}</td>
       <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
       <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
-      <td>
-        <div class="btn-group">
-          <button class="btn btn-sm btn-outline" onclick="openStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
-        </div>
-      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -1283,105 +1277,7 @@ async function loadStaffTable() {
   }
 }
 
-function openStaffModal(id = null) {
-  const modal = document.getElementById('staff-modal');
-  const title = document.getElementById('staff-modal-title');
-  const form = document.getElementById('staff-form');
-  
-  form.reset();
-  document.getElementById('staff-edit-id').value = '';
-  
-  if (id) {
-    const s = allStaff.find(item => item.id === id);
-    if (s) {
-      title.textContent = 'Edit Staff Member';
-      document.getElementById('staff-edit-id').value = s.id;
-      document.getElementById('staff-name').value = s.staff_name;
-      document.getElementById('staff-designation').value = s.designation;
-      document.getElementById('staff-emp-type').value = s.employment_type;
-      document.getElementById('staff-subject').value = s.subject;
-      document.getElementById('staff-joined-service').value = s.joined_service_date || '';
-      document.getElementById('staff-joined-institution').value = s.joined_institution_date || '';
-      document.getElementById('staff-phone1').value = s.phone_1 || '';
-      document.getElementById('staff-phone2').value = s.phone_2 || '';
-      
-      populateQualFormFields('staff', s);
-    }
-  } else {
-    title.textContent = 'Add Staff Member';
-    populateQualFormFields('staff', null);
-  }
-  
-  modal.classList.remove('hidden');
-}
-
-function closeStaffModal() {
-  document.getElementById('staff-modal').classList.add('hidden');
-}
-
-async function saveStaff(event) {
-  event.preventDefault();
-  
-  const id = document.getElementById('staff-edit-id').value;
-  const name = document.getElementById('staff-name').value.trim();
-  const designation = document.getElementById('staff-designation').value.trim();
-  const empType = document.getElementById('staff-emp-type').value;
-  const subject = document.getElementById('staff-subject').value.trim();
-  const joinedService = document.getElementById('staff-joined-service').value || null;
-  const joinedInst = document.getElementById('staff-joined-institution').value || null;
-  const phone1 = document.getElementById('staff-phone1').value.trim() || null;
-  const phone2 = document.getElementById('staff-phone2').value.trim() || null;
-  
-  const qualData = readQualFormFields('staff');
-  
-  const payload = {
-    school_id: currentSchool.id,
-    staff_name: name,
-    designation: designation,
-    employment_type: empType,
-    subject: subject,
-    joined_service_date: joinedService,
-    joined_institution_date: joinedInst,
-    phone_1: phone1,
-    phone_2: phone2,
-    ...qualData
-  };
-  
-  showLoading();
-  try {
-    if (id) {
-      const { error } = await supabase.from('staff').update(payload).eq('id', id);
-      if (error) throw error;
-      showToast('Staff profile updated successfully', 'success');
-    } else {
-      const { error } = await supabase.from('staff').insert([payload]);
-      if (error) throw error;
-      showToast('Staff profile created successfully', 'success');
-    }
-    closeStaffModal();
-    loadStaffTable();
-  } catch (err) {
-    showToast(err.message, 'error');
-  } finally {
-    hideLoading();
-  }
-}
-
-async function deleteStaff(id, name) {
-  if (!confirm(`Are you sure you want to delete staff member: ${name}?`)) return;
-  
-  showLoading();
-  try {
-    const { error } = await supabase.from('staff').delete().eq('id', id);
-    if (error) throw error;
-    showToast('Staff member deleted successfully', 'success');
-    loadStaffTable();
-  } catch (err) {
-    showToast(err.message, 'error');
-  } finally {
-    hideLoading();
-  }
-}
+// Staff modification operations are disabled in school login (Staff Profile is read-only)
 
 function openBulkPasteModal() {
   const modal = document.getElementById('bulk-paste-modal');
