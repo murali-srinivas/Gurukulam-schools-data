@@ -1009,6 +1009,14 @@ function onAdminReportTypeChange() {
         sectionSelect.disabled = true;
         examSelect.value = '';
         examSelect.disabled = true;
+    } else if (type === 'staffing_particulars') {
+        schoolSelect.disabled = false;
+        classSelect.value = '';
+        classSelect.disabled = true;
+        sectionSelect.value = '';
+        sectionSelect.disabled = true;
+        examSelect.value = '';
+        examSelect.disabled = true;
     } else if (type === 'schools') {
         schoolSelect.value = '';
         schoolSelect.disabled = true;
@@ -1305,6 +1313,43 @@ async function exportAdminExcel() {
             const fileName = `Staff_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
             showToast('Staff export successful', 'success');
+        } else if (type === 'staffing_particulars') {
+            let staffingQuery = supabase.from('staffing_particulars').select('*');
+            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            
+            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+            if (staffError) throw staffError;
+            
+            if (!list || list.length === 0) {
+                showToast('No staffing records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const reportData = list.map((item, index) => {
+                const school = allSchools.find(s => s.id === item.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                return {
+                    'S.No': index + 1,
+                    'Name of the School': schoolName,
+                    'Name of the Post': item.post_name,
+                    'Status': item.status,
+                    'Name of the Employee': item.employee_name || '-',
+                    'Employment Type': item.employment_type || '-',
+                    'Date of Joining': item.joining_date || '-',
+                    'Aadhar No': item.aadhar_no || '-',
+                    'APCOS ID': item.apcos_id || '-',
+                    'No of Days Present': item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
+                    'Remarks': item.remarks || '-'
+                };
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Staffing Particulars");
+            const fileName = `Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('Staffing particulars Excel export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -1638,6 +1683,49 @@ async function exportAdminPDF() {
             });
             doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Staff PDF export successful', 'success');
+        } else if (type === 'staffing_particulars') {
+            let staffingQuery = supabase.from('staffing_particulars').select('*');
+            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            
+            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+            if (staffError) throw staffError;
+            
+            if (!list || list.length === 0) {
+                showToast('No staffing records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const school = allSchools.find(s => s.id === schoolId);
+            const schoolName = school ? school.school_name : 'All Schools';
+            
+            const head = [['S.No', 'School Name', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Days Present', 'Remarks']];
+            const body = list.map((item, index) => {
+                const sName = allSchools.find(sc => sc.id === item.school_id)?.school_name || 'Unknown';
+                return [
+                    index + 1,
+                    sName,
+                    item.post_name,
+                    item.status,
+                    item.employee_name || '-',
+                    item.employment_type || '-',
+                    item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+                    item.aadhar_no || '-',
+                    item.apcos_id || '-',
+                    item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
+                    item.remarks || '-'
+                ];
+            });
+            
+            doc.text(`School: ${schoolName} | Staffing Particulars Report`, 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Staffing particulars PDF export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -1989,6 +2077,61 @@ async function generateReport() {
                         <td>${s.employment_type}</td>
                         <td>${s.subject}</td>
                         <td>${formatQualificationSummary(s)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
+        } else if (type === 'staffing_particulars') {
+            let staffingQuery = supabase.from('staffing_particulars').select('*');
+            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            
+            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+            if (staffError) throw staffError;
+            
+            if (!list || list.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No staffing records found.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School</th>
+                                <th>Name of the Post</th>
+                                <th>Status</th>
+                                <th>Name of the Employee</th>
+                                <th>Type of Employment</th>
+                                <th>Date of Joining</th>
+                                <th>Aadhar No</th>
+                                <th>APCOS ID</th>
+                                <th>No of Days Present</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            list.forEach(s => {
+                const schoolName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
+                const statusHtml = s.status === 'Filled' ? '<span class="badge badge-pass">Filled</span>' : '<span class="badge badge-fail">Vacant</span>';
+                const formattedDate = s.joining_date ? new Date(s.joining_date).toLocaleDateString() : '-';
+                html += `
+                    <tr>
+                        <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+                        <td style="font-weight: 500;">${s.post_name}</td>
+                        <td>${statusHtml}</td>
+                        <td>${s.employee_name || '-'}</td>
+                        <td>${s.employment_type || '-'}</td>
+                        <td>${formattedDate}</td>
+                        <td>${s.aadhar_no || '-'}</td>
+                        <td>${s.apcos_id || '-'}</td>
+                        <td>${s.days_present !== null && s.days_present !== undefined ? s.days_present : '-'}</td>
+                        <td>${s.remarks || '-'}</td>
                     </tr>
                 `;
             });

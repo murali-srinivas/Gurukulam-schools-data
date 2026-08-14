@@ -700,13 +700,70 @@ async function fetchReportData() {
   return { students, marksMap, exams };
 }
 
+function onReportTypeChange() {
+  const type = document.getElementById('report-type').value;
+  const classSelect = document.getElementById('report-class');
+  const sectionSelect = document.getElementById('report-section');
+  const examSelect = document.getElementById('report-exam');
+  
+  if (type === 'marks') {
+    classSelect.disabled = false;
+    sectionSelect.disabled = false;
+    examSelect.disabled = false;
+  } else {
+    classSelect.value = '';
+    classSelect.disabled = true;
+    sectionSelect.value = '';
+    sectionSelect.disabled = true;
+    examSelect.value = '';
+    examSelect.disabled = true;
+  }
+}
+
 function onReportClassChange() {
   updateExamDropdown('report-class', 'report-exam', true);
 }
 
 async function exportExcel() {
+  const type = document.getElementById('report-type').value;
   showLoading();
   try {
+    if (type === 'staffing') {
+      const { data: list, error: staffError } = await supabase
+        .from('staffing_particulars')
+        .select('*')
+        .eq('school_id', currentSchool.id)
+        .order('post_name');
+      if (staffError) throw staffError;
+      
+      if (!list || list.length === 0) {
+        showToast('No staffing records found for export', 'warning');
+        hideLoading();
+        return;
+      }
+      
+      const reportData = list.map((item, index) => ({
+        'S.No': index + 1,
+        'Name of the Post': item.post_name,
+        'Status': item.status,
+        'Name of the Employee': item.employee_name || '-',
+        'Employment Type': item.employment_type || '-',
+        'Date of Joining': item.joining_date || '-',
+        'Aadhar No': item.aadhar_no || '-',
+        'APCOS ID': item.apcos_id || '-',
+        'No of Days Present': item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
+        'Remarks': item.remarks || '-'
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Staffing Particulars");
+      const dateStr = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `${currentSchool.school_name.replace(/\s+/g, '_')}_Staffing_Report_${dateStr}.xlsx`);
+      showToast('Staffing particulars Excel export successful', 'success');
+      return;
+    }
+
     const { students, marksMap, exams } = await fetchReportData();
     if (students.length === 0) {
       showToast('No data found for the selected filters', 'warning');
@@ -897,8 +954,59 @@ async function exportExcel() {
 }
 
 async function exportPDF() {
+  const type = document.getElementById('report-type').value;
   showLoading();
   try {
+    if (type === 'staffing') {
+      const { data: list, error: staffError } = await supabase
+        .from('staffing_particulars')
+        .select('*')
+        .eq('school_id', currentSchool.id)
+        .order('post_name');
+      if (staffError) throw staffError;
+      
+      if (!list || list.length === 0) {
+        showToast('No staffing records found for export', 'warning');
+        hideLoading();
+        return;
+      }
+      
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      doc.setFontSize(16);
+      doc.text(`${currentSchool.school_name} - Staffing Particulars Report`, 14, 15);
+      
+      doc.setFontSize(10);
+      doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
+      
+      const head = [['S.No', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Days Present', 'Remarks']];
+      const body = list.map((item, index) => [
+        index + 1,
+        item.post_name,
+        item.status,
+        item.employee_name || '-',
+        item.employment_type || '-',
+        item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+        item.aadhar_no || '-',
+        item.apcos_id || '-',
+        item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
+        item.remarks || '-'
+      ]);
+      
+      doc.autoTable({
+        head: head,
+        body: body,
+        startY: 28,
+        styles: { fontSize: 8 }
+      });
+      
+      doc.save(`${currentSchool.school_name.replace(/\s+/g, '_')}_Staffing_Report_${dateStr}.pdf`);
+      showToast('Staffing particulars PDF export successful', 'success');
+      return;
+    }
+
     const { students, marksMap, exams } = await fetchReportData();
     if (students.length === 0) {
       showToast('No data found for the selected filters', 'warning');
