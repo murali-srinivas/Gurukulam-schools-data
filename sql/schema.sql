@@ -256,6 +256,15 @@ ON CONFLICT (username) DO NOTHING;
 -- ALTER TABLE staffing_particulars ADD CONSTRAINT staffing_particulars_aadhar_check 
 --     CHECK (aadhar_no IS NULL OR aadhar_no ~ '^\d{12}$');
 
+-- ============================================
+-- MIGRATION: Update status CHECK constraint to include 'Not Sanctioned'
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- ALTER TABLE staffing_particulars DROP CONSTRAINT IF EXISTS staffing_particulars_status_check;
+-- ALTER TABLE staffing_particulars ADD CONSTRAINT staffing_particulars_status_check 
+--     CHECK (status IN ('Filled', 'Vacant', 'Not Sanctioned'));
+
+
 
 
 

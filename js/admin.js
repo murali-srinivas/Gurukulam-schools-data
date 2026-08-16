@@ -2118,7 +2118,9 @@ async function generateReport() {
             
             list.forEach(s => {
                 const schoolName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
-                const statusHtml = s.status === 'Filled' ? '<span class="badge badge-pass">Filled</span>' : '<span class="badge badge-fail">Vacant</span>';
+                let statusHtml = '<span class="badge badge-fail">Vacant</span>';
+                if (s.status === 'Filled') statusHtml = '<span class="badge badge-pass">Filled</span>';
+                else if (s.status === 'Not Sanctioned') statusHtml = '<span class="badge badge-warning">Not Sanctioned</span>';
                 const formattedDate = s.joining_date ? new Date(s.joining_date).toLocaleDateString() : '-';
                 html += `
                     <tr>
@@ -2576,7 +2578,9 @@ function renderAdminStaffingTable() {
         const school = allSchools.find(s => s.id === item.school_id);
         const schoolName = school ? school.school_name : 'Unknown';
         
-        const badgeClass = item.status === 'Filled' ? 'badge-pass' : 'badge-fail';
+        let badgeClass = 'badge-fail';
+        if (item.status === 'Filled') badgeClass = 'badge-pass';
+        else if (item.status === 'Not Sanctioned') badgeClass = 'badge-warning';
         const statusHtml = `<span class="badge ${badgeClass}">${item.status}</span>`;
         
         const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';

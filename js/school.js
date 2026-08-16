@@ -870,7 +870,9 @@ async function generateSchoolReportPreview() {
       `;
       
       list.forEach((item, index) => {
-        const statusHtml = item.status === 'Filled' ? '<span class="badge badge-pass">Filled</span>' : '<span class="badge badge-fail">Vacant</span>';
+        let statusHtml = '<span class="badge badge-fail">Vacant</span>';
+        if (item.status === 'Filled') statusHtml = '<span class="badge badge-pass">Filled</span>';
+        else if (item.status === 'Not Sanctioned') statusHtml = '<span class="badge badge-warning">Not Sanctioned</span>';
         const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
         html += `
           <tr>
@@ -1593,7 +1595,9 @@ function renderStaffingTable() {
   filtered.forEach((item, index) => {
     const tr = document.createElement('tr');
     
-    const badgeClass = item.status === 'Filled' ? 'badge-pass' : 'badge-fail';
+    let badgeClass = 'badge-fail';
+    if (item.status === 'Filled') badgeClass = 'badge-pass';
+    else if (item.status === 'Not Sanctioned') badgeClass = 'badge-warning';
     const statusHtml = `<span class="badge ${badgeClass}">${item.status}</span>`;
     
     const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
