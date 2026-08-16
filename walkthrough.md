@@ -153,6 +153,8 @@ Then open `http://localhost:3000` in your browser.
 * **Staffing Particulars Report Integration**: Integrated the **Staffing Particulars Report** into the **Reports** tab for both admin and school login dashboards:
   * **School Login**: Added a "Report Type" dropdown in the Reports tab to select between "Exam Marks" and "Staffing Particulars". Selecting "Staffing Particulars" disables marks-specific filters (Class/Section/Exam) and enables exporting Excel/PDF reports containing the school's full staffing roster.
   * **Admin Login**: Added a "Staffing Particulars" option to the "Report Type" selection dropdown. Admins can preview staffing records for all schools or a selected school dynamically in the preview panel, as well as export them to Excel or PDF.
+* **School Login Generate Preview**: Added a **Generate Preview** button to the **Reports** tab in the School login dashboard. This allows schools to preview both "Exam Marks" (including roll number, name, class, section, subject marks, totals, pass/fail status, and subject/grade distributions) and "Staffing Particulars" in a table container directly on-screen before exporting to Excel or PDF.
+
 
 
 

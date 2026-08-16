@@ -718,10 +718,185 @@ function onReportTypeChange() {
     examSelect.value = '';
     examSelect.disabled = true;
   }
+  
+  const previewContainer = document.getElementById('report-preview');
+  if (previewContainer) previewContainer.innerHTML = '';
 }
 
 function onReportClassChange() {
   updateExamDropdown('report-class', 'report-exam', true);
+}
+
+async function generateSchoolReportPreview() {
+  const type = document.getElementById('report-type').value;
+  const previewContainer = document.getElementById('report-preview');
+  
+  if (!previewContainer) return;
+  previewContainer.innerHTML = '';
+  
+  showLoading();
+  try {
+    if (type === 'marks') {
+      const rClass = document.getElementById('report-class').value;
+      const rExam = document.getElementById('report-exam').value;
+      
+      if (!rClass || !rExam) {
+        previewContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-info-circle"></i>
+            <h4>Configure Filters</h4>
+            <p>Select both Class and Exam to view preview</p>
+          </div>
+        `;
+        hideLoading();
+        return;
+      }
+      
+      const { students, marksMap, exams } = await fetchReportData();
+      if (students.length === 0) {
+        previewContainer.innerHTML = '<div class="text-center p-4">No student records found matching filters.</div>';
+        hideLoading();
+        return;
+      }
+      
+      const examType = rExam;
+      const subjects = getSubjects(rClass, examType);
+      
+      let html = `
+        <div class="table-container mt-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Sec</th>
+                ${subjects.map(sub => `<th>${sub}</th>`).join('')}
+                <th>Total</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      students.forEach(student => {
+        const studentMarks = marksMap[student.id] || {};
+        const exMarks = studentMarks[examType] || {};
+        const isGraded = ['MBLP Exam1', 'MBLP Exam2', 'MBLP Exam3', 'End line test'].includes(examType);
+        
+        let anyFail = false;
+        let allPass = true;
+        let hasMarks = false;
+        let anyAbsent = false;
+        let totalSum = 0;
+        let allEmpty = true;
+        
+        let rowHtml = `
+          <tr>
+            <td>${student.roll_number}</td>
+            <td>${student.student_name}</td>
+            <td>${classDisplayName(student.class_number)}</td>
+            <td>${student.section}</td>
+        `;
+        
+        subjects.forEach(sub => {
+          const mark = exMarks[sub];
+          const val = mark ? (isGraded ? mark.pass_fail : (mark.pass_fail === 'AB' ? 'AB' : (mark.marks !== null ? mark.marks : ''))) : '';
+          if (val !== '') hasMarks = true;
+          if (!isGraded) {
+            if (mark && mark.pass_fail === 'AB') {
+              anyAbsent = true;
+            } else if (mark && mark.marks !== null) {
+              totalSum += mark.marks;
+              allEmpty = false;
+            }
+            if (mark && mark.pass_fail !== 'AB' && !isPassingGrade(mark.pass_fail)) anyFail = true;
+          }
+          if (!isGraded && (!mark || !isPassingGrade(mark.pass_fail))) allPass = false;
+          
+          rowHtml += `<td>${val !== '' ? val : '-'}</td>`;
+        });
+        
+        const totalVal = isGraded ? '-' : (allEmpty ? '-' : totalSum);
+        let result = '-';
+        if (hasMarks) {
+          result = isGraded ? '<span class="badge badge-pass">Graded</span>' : (anyAbsent ? '<span class="badge badge-info" style="background-color: #64748b; color: white;">Absent</span>' : (anyFail ? '<span class="badge badge-fail">Fail</span>' : (allPass ? '<span class="badge badge-pass">Pass</span>' : '<span class="badge badge-info">Incomplete</span>')));
+        }
+        
+        rowHtml += `<td>${totalVal}</td><td>${result}</td></tr>`;
+        html += rowHtml;
+      });
+      
+      html += `</tbody></table></div>`;
+      
+      // Generate grade distribution
+      const distHtml = getGradeDistributionHTML(students, marksMap, subjects, examType, true);
+      html += distHtml;
+      
+      previewContainer.innerHTML = html;
+      
+    } else if (type === 'staffing') {
+      const { data: list, error: staffError } = await supabase
+        .from('staffing_particulars')
+        .select('*')
+        .eq('school_id', currentSchool.id)
+        .order('post_name');
+      if (staffError) throw staffError;
+      
+      if (!list || list.length === 0) {
+        previewContainer.innerHTML = '<div class="text-center p-4">No staffing records found.</div>';
+        hideLoading();
+        return;
+      }
+      
+      let html = `
+        <div class="table-container mt-4">
+          <table>
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Name of the Post</th>
+                <th>Status</th>
+                <th>Name of the Employee</th>
+                <th>Type of Employment</th>
+                <th>Date of Joining</th>
+                <th>Aadhar No</th>
+                <th>APCOS ID</th>
+                <th>No of Days Present</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      list.forEach((item, index) => {
+        const statusHtml = item.status === 'Filled' ? '<span class="badge badge-pass">Filled</span>' : '<span class="badge badge-fail">Vacant</span>';
+        const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
+        html += `
+          <tr>
+            <td>${index + 1}</td>
+            <td style="font-weight: 500;">${item.post_name}</td>
+            <td>${statusHtml}</td>
+            <td>${item.employee_name || '-'}</td>
+            <td>${item.employment_type || '-'}</td>
+            <td>${formattedDate}</td>
+            <td>${item.aadhar_no || '-'}</td>
+            <td>${item.apcos_id || '-'}</td>
+            <td>${item.days_present !== null && item.days_present !== undefined ? item.days_present : '-'}</td>
+            <td>${item.remarks || '-'}</td>
+          </tr>
+        `;
+      });
+      
+      html += `</tbody></table></div>`;
+      previewContainer.innerHTML = html;
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to generate report preview', 'error');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function exportExcel() {
