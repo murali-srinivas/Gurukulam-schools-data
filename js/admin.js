@@ -2915,7 +2915,7 @@ function renderAdminOutsourcingAttendanceTable() {
     });
     
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center">No attendance records found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center">No attendance records found</td></tr>`;
         return;
     }
     
@@ -2938,6 +2938,7 @@ function renderAdminOutsourcingAttendanceTable() {
             <td style="font-weight: 500;">${displayMonth}</td>
             <td style="font-weight: 500;">${item.employee_name}</td>
             <td>${item.designation}</td>
+            <td>${item.apcos_id || '-'}</td>
             <td>${item.days_present}</td>
             <td>${item.remarks || '-'}</td>
             <td>
@@ -2999,6 +3000,7 @@ async function openAdminOutsourcingAttendanceModal(id = null) {
             document.getElementById('admin-out-month').value = item.month;
             document.getElementById('admin-out-employee').value = item.employee_name;
             document.getElementById('admin-out-designation').value = item.designation;
+            document.getElementById('admin-out-apcos').value = item.apcos_id || '';
             document.getElementById('admin-out-days-present').value = item.days_present;
             document.getElementById('admin-out-remarks').value = item.remarks || '';
         }
@@ -3052,6 +3054,7 @@ async function onAdminOutSchoolSelectChange() {
                 opt.value = s.employee_name;
                 opt.textContent = `${s.employee_name} (${s.post_name})`;
                 opt.setAttribute('data-post', s.post_name);
+                opt.setAttribute('data-apcos', s.apcos_id || '');
                 empSelect.appendChild(opt);
             });
             
@@ -3075,6 +3078,10 @@ function onAdminOutEmployeeChange() {
         if (postName) {
             document.getElementById('admin-out-designation').value = postName;
         }
+        const apcosId = selectedOption.getAttribute('data-apcos');
+        document.getElementById('admin-out-apcos').value = apcosId || '';
+    } else {
+        document.getElementById('admin-out-apcos').value = '';
     }
 }
 
@@ -3090,6 +3097,7 @@ async function saveAdminOutsourcingAttendance(event) {
     const month = document.getElementById('admin-out-month').value;
     const employeeName = document.getElementById('admin-out-employee').value;
     const designation = document.getElementById('admin-out-designation').value;
+    const apcosId = document.getElementById('admin-out-apcos').value.trim();
     const daysPresentVal = document.getElementById('admin-out-days-present').value;
     const remarks = document.getElementById('admin-out-remarks').value.trim();
     
@@ -3109,6 +3117,7 @@ async function saveAdminOutsourcingAttendance(event) {
         month: month,
         employee_name: employeeName,
         designation: designation,
+        apcos_id: apcosId || null,
         days_present: daysPresent,
         remarks: remarks || null
     };
@@ -3184,6 +3193,7 @@ async function exportAdminOutsourcingAttendanceExcel() {
             'Month': displayMonth,
             'Name of the Employee': item.employee_name,
             'Designation': item.designation,
+            'APCOS ID': item.apcos_id || '-',
             'No of Days Present': item.days_present,
             'Remarks': item.remarks || '-'
         };
@@ -3210,7 +3220,7 @@ async function exportAdminOutsourcingAttendancePDF() {
     doc.setFontSize(10);
     doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
     
-    const head = [['S.No', 'School Name', 'Month', 'Name of the Employee', 'Designation', 'Days Present', 'Remarks']];
+    const head = [['S.No', 'School Name', 'Month', 'Name of the Employee', 'Designation', 'APCOS ID', 'Days Present', 'Remarks']];
     const body = adminOutsourcingAttendanceData.map((item, index) => {
         const school = allSchools.find(s => s.id === item.school_id);
         const schoolName = school ? school.school_name : 'Unknown';
@@ -3228,6 +3238,7 @@ async function exportAdminOutsourcingAttendancePDF() {
             displayMonth,
             item.employee_name,
             item.designation,
+            item.apcos_id || '-',
             item.days_present,
             item.remarks || '-'
         ];

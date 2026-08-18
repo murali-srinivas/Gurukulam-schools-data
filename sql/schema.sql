@@ -274,10 +274,14 @@ ON CONFLICT (username) DO NOTHING;
 --     month VARCHAR(20) NOT NULL, -- Format: YYYY-MM
 --     employee_name TEXT NOT NULL,
 --     designation TEXT NOT NULL,
+--     apcos_id TEXT,
 --     days_present NUMERIC NOT NULL CHECK (days_present >= 0 AND days_present <= 31),
 --     remarks TEXT,
 --     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 -- );
+--
+-- ALTER TABLE outsourcing_attendance ADD COLUMN IF NOT EXISTS apcos_id TEXT;
+
 --
 -- ALTER TABLE outsourcing_attendance ENABLE ROW LEVEL SECURITY;
 --
