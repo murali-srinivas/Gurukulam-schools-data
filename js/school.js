@@ -862,7 +862,6 @@ async function generateSchoolReportPreview() {
                 <th>Date of Joining</th>
                 <th>Aadhar No</th>
                 <th>APCOS ID</th>
-                <th>No of Days Present</th>
                 <th>Remarks</th>
               </tr>
             </thead>
@@ -884,7 +883,6 @@ async function generateSchoolReportPreview() {
             <td>${formattedDate}</td>
             <td>${item.aadhar_no || '-'}</td>
             <td>${item.apcos_id || '-'}</td>
-            <td>${item.days_present !== null && item.days_present !== undefined ? item.days_present : '-'}</td>
             <td>${item.remarks || '-'}</td>
           </tr>
         `;
@@ -928,7 +926,6 @@ async function exportExcel() {
         'Date of Joining': item.joining_date || '-',
         'Aadhar No': item.aadhar_no || '-',
         'APCOS ID': item.apcos_id || '-',
-        'No of Days Present': item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
         'Remarks': item.remarks || '-'
       }));
       
@@ -1158,7 +1155,7 @@ async function exportPDF() {
       doc.setFontSize(10);
       doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
       
-      const head = [['S.No', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Days Present', 'Remarks']];
+      const head = [['S.No', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
       const body = list.map((item, index) => [
         index + 1,
         item.post_name,
@@ -1168,7 +1165,6 @@ async function exportPDF() {
         item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
         item.aadhar_no || '-',
         item.apcos_id || '-',
-        item.days_present !== null && item.days_present !== undefined ? item.days_present : '-',
         item.remarks || '-'
       ]);
       
@@ -1634,7 +1630,7 @@ function renderStaffingTable() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center">No staffing records found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center">No staffing records found</td></tr>`;
     return;
   }
   
@@ -1657,7 +1653,6 @@ function renderStaffingTable() {
       <td>${formattedDate}</td>
       <td>${item.aadhar_no || '-'}</td>
       <td>${item.apcos_id || '-'}</td>
-      <td>${item.days_present !== null && item.days_present !== undefined ? item.days_present : '-'}</td>
       <td>${item.remarks || '-'}</td>
       <td>
         <div class="btn-group">
@@ -1689,7 +1684,6 @@ function openStaffingModal(id = null) {
       document.getElementById('staffing-joining-date').value = item.joining_date || '';
       document.getElementById('staffing-aadhar').value = item.aadhar_no || '';
       document.getElementById('staffing-apcos').value = item.apcos_id || '';
-      document.getElementById('staffing-days-present').value = item.days_present !== null && item.days_present !== undefined ? item.days_present : '';
       document.getElementById('staffing-remarks').value = item.remarks || '';
     }
   } else {
@@ -1712,7 +1706,6 @@ function toggleStaffingFields() {
   const joinDateInput = document.getElementById('staffing-joining-date');
   const aadharInput = document.getElementById('staffing-aadhar');
   const apcosInput = document.getElementById('staffing-apcos');
-  const daysPresentInput = document.getElementById('staffing-days-present');
   
   if (status === 'Filled') {
     fieldsContainer.style.display = 'block';
@@ -1731,7 +1724,6 @@ function toggleStaffingFields() {
     joinDateInput.value = '';
     aadharInput.value = '';
     apcosInput.value = '';
-    daysPresentInput.value = '';
   }
 }
 
@@ -1746,7 +1738,6 @@ async function saveStaffing(event) {
   const joiningDate = document.getElementById('staffing-joining-date').value;
   const aadharNo = document.getElementById('staffing-aadhar').value.trim();
   const apcosId = document.getElementById('staffing-apcos').value.trim();
-  const daysPresent = document.getElementById('staffing-days-present').value;
   const remarks = document.getElementById('staffing-remarks').value.trim();
   
   if (!postName || !status) {
@@ -1774,7 +1765,6 @@ async function saveStaffing(event) {
     joining_date: status === 'Filled' ? joiningDate : null,
     aadhar_no: status === 'Filled' ? (aadharNo || null) : null,
     apcos_id: status === 'Filled' ? (apcosId || null) : null,
-    days_present: status === 'Filled' ? (daysPresent ? parseFloat(daysPresent) : null) : null,
     remarks: remarks || null
   };
   

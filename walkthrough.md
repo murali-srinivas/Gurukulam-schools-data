@@ -155,6 +155,8 @@ Then open `http://localhost:3000` in your browser.
   * **Admin Login**: Added a "Staffing Particulars" option to the "Report Type" selection dropdown. Admins can preview staffing records for all schools or a selected school dynamically in the preview panel, as well as export them to Excel or PDF.
 * **School Login Generate Preview**: Added a **Generate Preview** button to the **Reports** tab in the School login dashboard. This allows schools to preview both "Exam Marks" (including roll number, name, class, section, subject marks, totals, pass/fail status, and subject/grade distributions) and "Staffing Particulars" in a table container directly on-screen before exporting to Excel or PDF.
 * **Bulk Paste Name and Gender at once**: Upgraded the bulk paste student names modal in the School login to support pasting **both Student Name and Gender** simultaneously. When copying double columns from Excel or typing them manually, the system auto-detects Tab, Comma, or Semicolon delimiters, parses the name and gender values, maps gender formats (like Male/Female, Boy/Girl, B/G, or M/F) to the dashboard's Boy/Girl selector, and populates the data entry table instantly.
+* **Remove "No of days present in the month" Column**: Completely deleted the "No of days present in the month" column from the staffing grid, entry modals, query structures, report previews, Excel sheet generators, and PDF documents in both the school and admin logins.
+
 
 
 
