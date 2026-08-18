@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=5.7">
+  <link rel="stylesheet" href="css/styles.css?v=5.8">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -307,11 +307,11 @@
     </div>
     <div class="modal-body">
       <p style="font-size: 0.85rem; margin-bottom: 12px; color: #94a3b8;">
-        Copy a column of student names from Excel (one student name per row) and paste them in the text area below. They will be populated sequentially starting from Roll No 1.
+        Copy Student Name and Gender columns from Excel (separated by a Tab, Comma, or Semicolon) and paste them in the text area below. You can also paste names only.
       </p>
       <div class="form-group">
-        <label class="form-label">Paste Names here</label>
-        <textarea id="bulk-paste-textarea" class="form-input" style="height: 200px; font-family: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="Student Name 1&#10;Student Name 2&#10;Student Name 3..."></textarea>
+        <label class="form-label">Paste Name and Gender here</label>
+        <textarea id="bulk-paste-textarea" class="form-input" style="height: 200px; font-family: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="Ramesh Kumar	Boy&#10;Sita Kumari	Girl&#10;Amit Patel	Boy&#10;or simply names alone..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -442,8 +442,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=5.7"></script>
-<script src="js/auth.js?v=5.7"></script>
-<script src="js/school.js?v=5.7"></script>
+<script src="js/supabase-config.js?v=5.8"></script>
+<script src="js/auth.js?v=5.8"></script>
+<script src="js/school.js?v=5.8"></script>
 </body>
 </html>

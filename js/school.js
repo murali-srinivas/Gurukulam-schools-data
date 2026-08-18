@@ -1485,24 +1485,70 @@ function applyBulkPaste() {
     return;
   }
   
+  const parsedData = lines.map(line => {
+    let parts = [];
+    if (line.includes('\t')) {
+      parts = line.split('\t');
+    } else if (line.includes(',')) {
+      parts = line.split(',');
+    } else if (line.includes(';')) {
+      parts = line.split(';');
+    } else {
+      const lastSpaceIndex = line.lastIndexOf(' ');
+      if (lastSpaceIndex !== -1) {
+        const lastWord = line.substring(lastSpaceIndex + 1).trim().toUpperCase();
+        if (['BOY', 'GIRL'].includes(lastWord)) {
+          parts = [line.substring(0, lastSpaceIndex).trim(), lastWord];
+        } else {
+          parts = [line];
+        }
+      } else {
+        parts = [line];
+      }
+    }
+    
+    const name = parts[0].trim();
+    let gender = '';
+    
+    if (parts.length > 1) {
+      const gRaw = parts[1].trim().toUpperCase();
+      if (gRaw === 'BOY' || gRaw === 'MALE' || gRaw === 'B') {
+        gender = 'Boy';
+      } else if (gRaw === 'GIRL' || gRaw === 'FEMALE' || gRaw === 'G') {
+        gender = 'Girl';
+      }
+    }
+    
+    return { name, gender };
+  }).filter(item => item.name.length > 0);
+  
+  if (parsedData.length === 0) {
+    showToast('Please paste valid student names.', 'warning');
+    return;
+  }
+  
   let rows = tbody.querySelectorAll('tr');
-  while (lines.length > rows.length) {
+  while (parsedData.length > rows.length) {
     addNewStudentRow();
     rows = tbody.querySelectorAll('tr');
   }
   
   let count = 0;
-  lines.forEach((name, index) => {
+  parsedData.forEach((item, index) => {
     if (index < rows.length) {
-      const input = rows[index].querySelector('.student-name');
-      if (input) {
-        input.value = name;
+      const nameInput = rows[index].querySelector('.student-name');
+      const genderSelect = rows[index].querySelector('.student-gender');
+      if (nameInput) {
+        nameInput.value = item.name;
         count++;
+      }
+      if (genderSelect && item.gender) {
+        genderSelect.value = item.gender;
       }
     }
   });
   
-  showToast(`Successfully populated ${count} student names. Click 'Save Students' to save.`, 'success');
+  showToast(`Successfully populated ${count} student names & genders. Click 'Save Students' to save.`, 'success');
   closeBulkPasteModal();
 }
 
