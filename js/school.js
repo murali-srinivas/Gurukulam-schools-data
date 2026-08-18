@@ -1870,7 +1870,7 @@ function renderOutsourcingAttendanceTable() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center">No attendance records found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center">No attendance records found</td></tr>`;
     return;
   }
   
@@ -1889,6 +1889,7 @@ function renderOutsourcingAttendanceTable() {
       <td style="font-weight: 500; color: #1e3a8a;">${displayMonth}</td>
       <td style="font-weight: 500;">${item.employee_name}</td>
       <td>${item.designation}</td>
+      <td>${item.aadhar_no || '-'}</td>
       <td>${item.apcos_id || '-'}</td>
       <td>${item.days_present}</td>
       <td>${item.remarks || '-'}</td>
@@ -1938,6 +1939,7 @@ async function openOutsourcingAttendanceModal(id = null) {
         opt.textContent = `${s.employee_name} (${s.post_name})`;
         opt.setAttribute('data-post', s.post_name);
         opt.setAttribute('data-apcos', s.apcos_id || '');
+        opt.setAttribute('data-aadhar', s.aadhar_no || '');
         empSelect.appendChild(opt);
       });
       
@@ -1956,6 +1958,7 @@ async function openOutsourcingAttendanceModal(id = null) {
         document.getElementById('out-month').value = item.month;
         document.getElementById('out-employee').value = item.employee_name;
         document.getElementById('out-designation').value = item.designation;
+        document.getElementById('out-aadhar').value = item.aadhar_no || '';
         document.getElementById('out-apcos').value = item.apcos_id || '';
         document.getElementById('out-days-present').value = item.days_present;
         document.getElementById('out-remarks').value = item.remarks || '';
@@ -1985,9 +1988,12 @@ function onOutEmployeeChange() {
     if (postName) {
       document.getElementById('out-designation').value = postName;
     }
+    const aadharNo = selectedOption.getAttribute('data-aadhar');
+    document.getElementById('out-aadhar').value = aadharNo || '';
     const apcosId = selectedOption.getAttribute('data-apcos');
     document.getElementById('out-apcos').value = apcosId || '';
   } else {
+    document.getElementById('out-aadhar').value = '';
     document.getElementById('out-apcos').value = '';
   }
 }
@@ -2003,6 +2009,7 @@ async function saveOutsourcingAttendance(event) {
   const month = document.getElementById('out-month').value;
   const employeeName = document.getElementById('out-employee').value;
   const designation = document.getElementById('out-designation').value;
+  const aadharNo = document.getElementById('out-aadhar').value.trim();
   const apcosId = document.getElementById('out-apcos').value.trim();
   const daysPresentVal = document.getElementById('out-days-present').value;
   const remarks = document.getElementById('out-remarks').value.trim();
@@ -2023,6 +2030,7 @@ async function saveOutsourcingAttendance(event) {
     month: month,
     employee_name: employeeName,
     designation: designation,
+    aadhar_no: aadharNo || null,
     apcos_id: apcosId || null,
     days_present: daysPresent,
     remarks: remarks || null
