@@ -264,6 +264,27 @@ ON CONFLICT (username) DO NOTHING;
 -- ALTER TABLE staffing_particulars ADD CONSTRAINT staffing_particulars_status_check 
 --     CHECK (status IN ('Filled', 'Vacant', 'Not Sanctioned'));
 
+-- ============================================
+-- MIGRATION: Create outsourcing_attendance table
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- CREATE TABLE IF NOT EXISTS outsourcing_attendance (
+--     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+--     month VARCHAR(20) NOT NULL, -- Format: YYYY-MM
+--     employee_name TEXT NOT NULL,
+--     designation TEXT NOT NULL,
+--     days_present NUMERIC NOT NULL CHECK (days_present >= 0 AND days_present <= 31),
+--     remarks TEXT,
+--     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- );
+--
+-- ALTER TABLE outsourcing_attendance ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY "Allow all on outsourcing_attendance" ON outsourcing_attendance
+--     FOR ALL USING (true) WITH CHECK (true);
+
+
 
 
 

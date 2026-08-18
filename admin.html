@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=5.9">
+  <link rel="stylesheet" href="css/styles.css?v=6.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -37,6 +37,9 @@
       </div>
       <div class="nav-item" onclick="switchTab('staffing-particulars')" id="nav-staffing-particulars">
         <i class="fas fa-clipboard-list"></i> Staffing Particulars
+      </div>
+      <div class="nav-item" onclick="switchTab('outsourcing-attendance')" id="nav-outsourcing-attendance">
+        <i class="fas fa-user-clock"></i> Outsourcing Attendance
       </div>
       <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
         <i class="fas fa-file-alt"></i> Exam Marks
@@ -347,6 +350,65 @@
                 </tr>
               </thead>
               <tbody id="staffing-table-body">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: OUTSOURCING ATTENDANCE (Admin Mode) -->
+      <div class="tab-pane" id="tab-outsourcing-attendance">
+        <div class="d-flex justify-between align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title"><i class="fas fa-user-clock"></i> Attendance of Out Sourcing Teachers</h2>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="openAdminOutsourcingAttendanceModal()">
+              <i class="fas fa-plus"></i> Add Attendance Record
+            </button>
+            <button class="btn btn-success" onclick="exportAdminOutsourcingAttendanceExcel()">
+              <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportAdminOutsourcingAttendancePDF()">
+              <i class="fas fa-file-pdf"></i> Export PDF
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="filter-bar flex-wrap gap-4" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
+            <div class="filter-group">
+              <label>Search School</label>
+              <input type="text" id="admin-out-school-search" class="form-input" style="padding: 6px 12px; margin-bottom: 0;" placeholder="Search school..." oninput="filterAdminOutSchoolDropdown()">
+            </div>
+            <div class="filter-group">
+              <label>School</label>
+              <select id="admin-out-filter-school" class="form-select" onchange="loadAdminOutsourcingAttendanceTable()">
+                <option value="">All Schools</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Filter by Month</label>
+              <input type="month" id="admin-out-filter-month" class="form-input" onchange="loadAdminOutsourcingAttendanceTable()">
+            </div>
+            <div class="filter-group" style="flex-grow: 1; max-width: 300px;">
+              <label>Search Employee / Designation</label>
+              <input type="text" id="admin-out-search-input" class="form-input" placeholder="Search employee, designation..." oninput="renderAdminOutsourcingAttendanceTable()">
+            </div>
+          </div>
+          <div class="table-container standalone">
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>School Name</th>
+                  <th>Month</th>
+                  <th>Name of the Employee</th>
+                  <th>Designation</th>
+                  <th>No of Days Present</th>
+                  <th>Remarks</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-out-attendance-table-body">
                 <!-- Will be populated by JS -->
               </tbody>
             </table>
@@ -834,12 +896,70 @@
   </div>
 </div>
 
+<!-- MODAL: Add/Edit Outsourcing Attendance (Admin) -->
+<div class="modal-overlay hidden" id="admin-out-attendance-modal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="admin-out-attendance-modal-title">Add Attendance Record</h3>
+      <button class="modal-close" onclick="closeAdminOutsourcingAttendanceModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="admin-out-attendance-form" onsubmit="saveAdminOutsourcingAttendance(event)">
+        <input type="hidden" id="admin-out-edit-id" value="">
+        
+        <div class="form-group">
+          <label class="form-label">School</label>
+          <select class="form-select" id="admin-out-school-select" required onchange="onAdminOutSchoolSelectChange()">
+            <option value="">Select School</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Month</label>
+          <input type="month" class="form-input" id="admin-out-month" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Name of the Employee</label>
+          <select class="form-select" id="admin-out-employee" required onchange="onAdminOutEmployeeChange()">
+            <option value="">Select Out Sourcing Employee</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Designation</label>
+          <select class="form-select" id="admin-out-designation" required>
+            <option value="">Select Designation</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">No of Days Present</label>
+          <input type="number" class="form-input" id="admin-out-days-present" min="0" max="31" step="0.5" placeholder="e.g. 24" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Remarks</label>
+          <input type="text" class="form-input" id="admin-out-remarks" placeholder="Enter optional remarks">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAdminOutsourcingAttendanceModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('admin-out-attendance-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Attendance
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=5.9"></script>
-<script src="js/auth.js?v=5.9"></script>
-<script src="js/admin.js?v=5.9"></script>
+<script src="js/supabase-config.js?v=6.0"></script>
+<script src="js/auth.js?v=6.0"></script>
+<script src="js/admin.js?v=6.0"></script>
 </body>
 </html>

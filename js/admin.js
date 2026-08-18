@@ -53,6 +53,7 @@ function switchTab(tabName) {
         'students': 'Students',
         'staff': 'Staff Management',
         'staffing-particulars': 'Staffing Particulars',
+        'outsourcing-attendance': 'Attendance of Out Sourcing Teachers',
         'marks': 'Exam Marks',
         'reports': 'Reports & Export'
     };
@@ -79,6 +80,21 @@ function switchTab(tabName) {
         const statusSelect = document.getElementById('staffing-filter-status');
         if (statusSelect) statusSelect.value = '';
         loadAdminStaffingTable();
+    } else if (tabName === 'outsourcing-attendance') {
+        const schoolSearchInput = document.getElementById('admin-out-school-search');
+        if (schoolSearchInput) {
+            schoolSearchInput.value = '';
+            filterAdminOutSchoolDropdown();
+        }
+        const searchInput = document.getElementById('admin-out-search-input');
+        if (searchInput) searchInput.value = '';
+        const monthFilter = document.getElementById('admin-out-filter-month');
+        if (monthFilter && !monthFilter.value) {
+            const d = new Date();
+            const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            monthFilter.value = currentMonthStr;
+        }
+        loadAdminOutsourcingAttendanceTable();
     } else if (tabName === 'marks') {
         const searchInputMarks = document.getElementById('marks-school-search');
         if (searchInputMarks) {
@@ -119,6 +135,8 @@ async function loadSchoolsList() {
         populateFilterDropdown('overview-school-select', schoolOptions, 'id', 'name');
         populateFilterDropdown('staffing-filter-school', schoolOptions, 'id', 'name');
         populateFilterDropdown('staffing-school-select', schoolOptions, 'id', 'name');
+        populateFilterDropdown('admin-out-filter-school', schoolOptions, 'id', 'name');
+        populateFilterDropdown('admin-out-school-select', schoolOptions, 'id', 'name');
         
         const searchInputOverview = document.getElementById('overview-school-search');
         if (searchInputOverview) searchInputOverview.value = '';
@@ -128,6 +146,8 @@ async function loadSchoolsList() {
         if (searchInputReports) searchInputReports.value = '';
         const searchInputStaffing = document.getElementById('staffing-school-search');
         if (searchInputStaffing) searchInputStaffing.value = '';
+        const searchInputOut = document.getElementById('admin-out-school-search');
+        if (searchInputOut) searchInputOut.value = '';
     } catch (err) {
         console.error(err);
         showToast('Failed to load schools list', 'error');
@@ -2848,6 +2868,380 @@ async function exportAdminStaffingPDF() {
     
     doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     showToast('Staffing particulars PDF export successful', 'success');
+}
+
+let adminOutsourcingAttendanceData = [];
+
+async function loadAdminOutsourcingAttendanceTable() {
+    const schoolFilter = document.getElementById('admin-out-filter-school').value;
+    const monthFilter = document.getElementById('admin-out-filter-month').value;
+    
+    showLoading();
+    try {
+        let query = supabase.from('outsourcing_attendance').select('*');
+        
+        if (schoolFilter) {
+            query = query.eq('school_id', schoolFilter);
+        }
+        if (monthFilter) {
+            query = query.eq('month', monthFilter);
+        }
+        
+        const { data, error } = await query.order('month', { ascending: false }).order('employee_name');
+        if (error) throw error;
+        
+        adminOutsourcingAttendanceData = data || [];
+        renderAdminOutsourcingAttendanceTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderAdminOutsourcingAttendanceTable() {
+    const tbody = document.getElementById('admin-out-attendance-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const searchVal = document.getElementById('admin-out-search-input').value.trim().toLowerCase();
+    
+    const filtered = adminOutsourcingAttendanceData.filter(item => {
+        const matchesSearch = !searchVal || 
+            item.employee_name.toLowerCase().includes(searchVal) ||
+            item.designation.toLowerCase().includes(searchVal) ||
+            (item.remarks && item.remarks.toLowerCase().includes(searchVal));
+        return matchesSearch;
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center">No attendance records found</td></tr>`;
+        return;
+    }
+    
+    filtered.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        
+        let displayMonth = item.month;
+        if (item.month && item.month.includes('-')) {
+            const [year, month] = item.month.split('-');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            displayMonth = `${monthNames[parseInt(month) - 1]} ${year}`;
+        }
+        
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+            <td style="font-weight: 500;">${displayMonth}</td>
+            <td style="font-weight: 500;">${item.employee_name}</td>
+            <td>${item.designation}</td>
+            <td>${item.days_present}</td>
+            <td>${item.remarks || '-'}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline" onclick="openAdminOutsourcingAttendanceModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminOutsourcingAttendance('${item.id}', '${item.employee_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function filterAdminOutSchoolDropdown() {
+    const searchVal = document.getElementById('admin-out-school-search').value.toLowerCase();
+    const select = document.getElementById('admin-out-filter-school');
+    
+    select.innerHTML = '<option value="">All Schools</option>';
+    
+    const filtered = allSchools.filter(s => s.school_name.toLowerCase().includes(searchVal));
+    filtered.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.school_name;
+        select.appendChild(opt);
+    });
+}
+
+async function openAdminOutsourcingAttendanceModal(id = null) {
+    const modal = document.getElementById('admin-out-attendance-modal');
+    const title = document.getElementById('admin-out-attendance-modal-title');
+    const form = document.getElementById('admin-out-attendance-form');
+    
+    form.reset();
+    document.getElementById('admin-out-edit-id').value = id || '';
+    
+    const schoolSelect = document.getElementById('admin-out-school-select');
+    schoolSelect.innerHTML = '<option value="">Select School</option>';
+    allSchools.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.school_name;
+        schoolSelect.appendChild(opt);
+    });
+    
+    const empSelect = document.getElementById('admin-out-employee');
+    const desSelect = document.getElementById('admin-out-designation');
+    empSelect.innerHTML = '<option value="">Select Out Sourcing Employee</option>';
+    desSelect.innerHTML = '<option value="">Select Designation</option>';
+    
+    if (id) {
+        title.textContent = 'Edit Attendance Record';
+        const item = adminOutsourcingAttendanceData.find(x => x.id === id);
+        if (item) {
+            schoolSelect.value = item.school_id;
+            
+            await onAdminOutSchoolSelectChange();
+            
+            document.getElementById('admin-out-month').value = item.month;
+            document.getElementById('admin-out-employee').value = item.employee_name;
+            document.getElementById('admin-out-designation').value = item.designation;
+            document.getElementById('admin-out-days-present').value = item.days_present;
+            document.getElementById('admin-out-remarks').value = item.remarks || '';
+        }
+    } else {
+        title.textContent = 'Add Attendance Record';
+        const filterSchool = document.getElementById('admin-out-filter-school').value;
+        if (filterSchool) {
+            schoolSelect.value = filterSchool;
+            await onAdminOutSchoolSelectChange();
+        }
+        
+        const filterMonth = document.getElementById('admin-out-filter-month').value;
+        if (filterMonth) {
+            document.getElementById('admin-out-month').value = filterMonth;
+        } else {
+            const d = new Date();
+            document.getElementById('admin-out-month').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+async function onAdminOutSchoolSelectChange() {
+    const schoolId = document.getElementById('admin-out-school-select').value;
+    const empSelect = document.getElementById('admin-out-employee');
+    const desSelect = document.getElementById('admin-out-designation');
+    
+    empSelect.innerHTML = '<option value="">Select Out Sourcing Employee</option>';
+    desSelect.innerHTML = '<option value="">Select Designation</option>';
+    
+    if (!schoolId) return;
+    
+    try {
+        const { data: staffList, error } = await supabase
+            .from('staffing_particulars')
+            .select('*')
+            .eq('school_id', schoolId)
+            .eq('status', 'Filled')
+            .eq('employment_type', 'Out Sourcing');
+            
+        if (error) throw error;
+        
+        if (!staffList || staffList.length === 0) {
+            showToast('No "Out Sourcing" staff records are currently marked as "Filled" in Staffing Particulars for this school.', 'warning');
+        } else {
+            const uniquePosts = [...new Set(staffList.map(s => s.post_name))];
+            
+            staffList.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.employee_name;
+                opt.textContent = `${s.employee_name} (${s.post_name})`;
+                opt.setAttribute('data-post', s.post_name);
+                empSelect.appendChild(opt);
+            });
+            
+            uniquePosts.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                desSelect.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        showToast('Failed to load school staff: ' + err.message, 'error');
+    }
+}
+
+function onAdminOutEmployeeChange() {
+    const select = document.getElementById('admin-out-employee');
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption) {
+        const postName = selectedOption.getAttribute('data-post');
+        if (postName) {
+            document.getElementById('admin-out-designation').value = postName;
+        }
+    }
+}
+
+function closeAdminOutsourcingAttendanceModal() {
+    document.getElementById('admin-out-attendance-modal').classList.add('hidden');
+}
+
+async function saveAdminOutsourcingAttendance(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('admin-out-edit-id').value;
+    const schoolId = document.getElementById('admin-out-school-select').value;
+    const month = document.getElementById('admin-out-month').value;
+    const employeeName = document.getElementById('admin-out-employee').value;
+    const designation = document.getElementById('admin-out-designation').value;
+    const daysPresentVal = document.getElementById('admin-out-days-present').value;
+    const remarks = document.getElementById('admin-out-remarks').value.trim();
+    
+    if (!schoolId || !month || !employeeName || !designation || daysPresentVal === '') {
+        showToast('Please fill all required fields.', 'warning');
+        return;
+    }
+    
+    const daysPresent = parseFloat(daysPresentVal);
+    if (isNaN(daysPresent) || daysPresent < 0 || daysPresent > 31) {
+        showToast('No of days present must be between 0 and 31.', 'warning');
+        return;
+    }
+    
+    const payload = {
+        school_id: schoolId,
+        month: month,
+        employee_name: employeeName,
+        designation: designation,
+        days_present: daysPresent,
+        remarks: remarks || null
+    };
+    
+    showLoading();
+    try {
+        if (id) {
+            const { error } = await supabase
+                .from('outsourcing_attendance')
+                .update(payload)
+                .eq('id', id);
+            if (error) throw error;
+            showToast('Attendance record updated successfully', 'success');
+        } else {
+            const { error } = await supabase
+                .from('outsourcing_attendance')
+                .insert(payload);
+            if (error) throw error;
+            showToast('Attendance record added successfully', 'success');
+        }
+        closeAdminOutsourcingAttendanceModal();
+        loadAdminOutsourcingAttendanceTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function deleteAdminOutsourcingAttendance(id, employeeName) {
+    if (!confirm(`Are you sure you want to delete attendance record for ${employeeName}?`)) return;
+    
+    showLoading();
+    supabase
+        .from('outsourcing_attendance')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+            hideLoading();
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('Attendance record deleted successfully', 'success');
+                loadAdminOutsourcingAttendanceTable();
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast(err.message, 'error');
+        });
+}
+
+async function exportAdminOutsourcingAttendanceExcel() {
+    if (adminOutsourcingAttendanceData.length === 0) {
+        showToast('No attendance records found for export', 'warning');
+        return;
+    }
+    
+    const reportData = adminOutsourcingAttendanceData.map((item, index) => {
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        
+        let displayMonth = item.month;
+        if (item.month && item.month.includes('-')) {
+            const [year, month] = item.month.split('-');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            displayMonth = `${monthNames[parseInt(month) - 1]} ${year}`;
+        }
+        
+        return {
+            'S.No': index + 1,
+            'School Name': schoolName,
+            'Month': displayMonth,
+            'Name of the Employee': item.employee_name,
+            'Designation': item.designation,
+            'No of Days Present': item.days_present,
+            'Remarks': item.remarks || '-'
+        };
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Outsourcing Attendance");
+    
+    const fileName = `Outsourcing_Attendance_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    showToast('Outsourcing attendance Excel export successful', 'success');
+}
+
+async function exportAdminOutsourcingAttendancePDF() {
+    if (adminOutsourcingAttendanceData.length === 0) {
+        showToast('No attendance records found for export', 'warning');
+        return;
+    }
+    
+    const doc = new jspdf.jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.text('School Data Portal - Outsourcing Attendance Report', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
+    
+    const head = [['S.No', 'School Name', 'Month', 'Name of the Employee', 'Designation', 'Days Present', 'Remarks']];
+    const body = adminOutsourcingAttendanceData.map((item, index) => {
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        
+        let displayMonth = item.month;
+        if (item.month && item.month.includes('-')) {
+            const [year, month] = item.month.split('-');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            displayMonth = `${monthNames[parseInt(month) - 1]} ${year}`;
+        }
+        
+        return [
+            index + 1,
+            schoolName,
+            displayMonth,
+            item.employee_name,
+            item.designation,
+            item.days_present,
+            item.remarks || '-'
+        ];
+    });
+    
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: 28,
+        styles: { fontSize: 9 }
+    });
+    
+    doc.save(`Outsourcing_Attendance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('Outsourcing attendance PDF export successful', 'success');
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);

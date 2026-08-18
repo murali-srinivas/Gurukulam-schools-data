@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=5.9">
+  <link rel="stylesheet" href="css/styles.css?v=6.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -34,6 +34,9 @@
       </div>
       <div class="nav-item" onclick="switchTab('staffing-particulars')" id="nav-staffing-particulars">
         <i class="fas fa-clipboard-list"></i> Staffing Particulars
+      </div>
+      <div class="nav-item" onclick="switchTab('outsourcing-attendance')" id="nav-outsourcing-attendance">
+        <i class="fas fa-user-clock"></i> Outsourcing Attendance
       </div>
       <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
         <i class="fas fa-edit"></i> Enter Marks
@@ -292,6 +295,48 @@
         </div>
       </div>
 
+      <!-- TAB: OUTSOURCING ATTENDANCE -->
+      <div class="tab-pane" id="tab-outsourcing-attendance">
+        <div class="d-flex align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title" style="margin-bottom: 0; margin-right: 12px;"><i class="fas fa-user-clock"></i> Attendance of Out Sourcing Teachers</h2>
+          <button class="btn btn-primary" onclick="openOutsourcingAttendanceModal()">
+            <i class="fas fa-plus"></i> Add Attendance Record
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="filter-bar" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
+            <div class="filter-group" style="max-width: 200px;">
+              <label>Filter by Month</label>
+              <input type="month" id="out-filter-month" class="form-input" onchange="loadOutsourcingAttendanceTable()">
+            </div>
+            <div class="filter-group" style="max-width: 300px; flex-grow: 1;">
+              <label>Search Employee / Designation</label>
+              <input type="text" id="out-search-input" class="form-input" placeholder="Search employee, designation..." oninput="renderOutsourcingAttendanceTable()">
+            </div>
+          </div>
+
+          <div class="table-container standalone">
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Month</th>
+                  <th>Name of the Employee</th>
+                  <th>Designation</th>
+                  <th>No of Days Present</th>
+                  <th>Remarks</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="out-attendance-table-body">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -433,12 +478,63 @@
   </div>
 </div>
 
+<!-- MODAL: Add/Edit Outsourcing Attendance -->
+<div class="modal-overlay hidden" id="out-attendance-modal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="out-attendance-modal-title">Add Attendance Record</h3>
+      <button class="modal-close" onclick="closeOutsourcingAttendanceModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="out-attendance-form" onsubmit="saveOutsourcingAttendance(event)">
+        <input type="hidden" id="out-edit-id" value="">
+        
+        <div class="form-group">
+          <label class="form-label">Month</label>
+          <input type="month" class="form-input" id="out-month" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Name of the Employee</label>
+          <select class="form-select" id="out-employee" required onchange="onOutEmployeeChange()">
+            <option value="">Select Out Sourcing Employee</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Designation</label>
+          <select class="form-select" id="out-designation" required>
+            <option value="">Select Designation</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">No of Days Present</label>
+          <input type="number" class="form-input" id="out-days-present" min="0" max="31" step="0.5" placeholder="e.g. 24" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Remarks</label>
+          <input type="text" class="form-input" id="out-remarks" placeholder="Enter optional remarks">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeOutsourcingAttendanceModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('out-attendance-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Attendance
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=5.9"></script>
-<script src="js/auth.js?v=5.9"></script>
-<script src="js/school.js?v=5.9"></script>
+<script src="js/supabase-config.js?v=6.0"></script>
+<script src="js/auth.js?v=6.0"></script>
+<script src="js/school.js?v=6.0"></script>
 </body>
 </html>
