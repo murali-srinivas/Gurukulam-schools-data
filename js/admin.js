@@ -1285,6 +1285,7 @@ async function exportAdminExcel() {
                 const school = allSchools.find(s => s.id === student.school_id);
                 return {
                     'School': school ? school.school_name : 'Unknown',
+                    'District': school ? school.district || '-' : '-',
                     'Class': classDisplayName(student.class_number),
                     'Section': student.section,
                     'Roll No': student.roll_number,
@@ -1352,6 +1353,7 @@ async function exportAdminExcel() {
                 return {
                     'S.No': index + 1,
                     'Name of the School': schoolName,
+                    'District': school ? school.district || '-' : '-',
                     'Name of the Post': item.post_name,
                     'Status': item.status,
                     'Name of the Employee': item.employee_name || '-',
@@ -1378,6 +1380,7 @@ async function exportAdminExcel() {
             
             const reportData = allSchools.map(s => ({
                 'School Name': s.school_name,
+                'District': s.district || '-',
                 'Username': s.username,
                 'Password': s.password,
                 'Is Admin': s.is_admin ? 'Yes' : 'No',
@@ -1641,11 +1644,14 @@ async function exportAdminPDF() {
             const school = allSchools.find(s => s.id === schoolId);
             const schoolName = school ? school.school_name : 'All Schools';
             
-            const head = [['School', 'Class', 'Sec', 'Roll No', 'Student Name', 'Gender']];
+            const head = [['School', 'District', 'Class', 'Sec', 'Roll No', 'Student Name', 'Gender']];
             const body = students.map(student => {
-                const sName = allSchools.find(s => s.id === student.school_id)?.school_name || 'Unknown';
+                const school = allSchools.find(s => s.id === student.school_id);
+                const sName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
                 return [
                     sName,
+                    dist,
                     classDisplayName(student.class_number),
                     student.section,
                     student.roll_number,
@@ -1718,12 +1724,15 @@ async function exportAdminPDF() {
             const school = allSchools.find(s => s.id === schoolId);
             const schoolName = school ? school.school_name : 'All Schools';
             
-            const head = [['S.No', 'School Name', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
+            const head = [['S.No', 'School Name', 'District', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
             const body = list.map((item, index) => {
-                const sName = allSchools.find(sc => sc.id === item.school_id)?.school_name || 'Unknown';
+                const school = allSchools.find(sc => sc.id === item.school_id);
+                const sName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
                 return [
                     index + 1,
                     sName,
+                    dist,
                     item.post_name,
                     item.status,
                     item.employee_name || '-',
@@ -1751,9 +1760,10 @@ async function exportAdminPDF() {
                 return;
             }
             
-            const head = [['School Name', 'Username', 'Password', 'Admin Status', 'Registered Date']];
+            const head = [['School Name', 'District', 'Username', 'Password', 'Admin Status', 'Registered Date']];
             const body = allSchools.map(s => [
                 s.school_name,
+                s.district || '-',
                 s.username,
                 s.password,
                 s.is_admin ? 'Yes' : 'No',
@@ -2029,6 +2039,7 @@ async function generateReport() {
                         <thead>
                             <tr>
                                 <th>School</th>
+                                <th>District</th>
                                 <th>Class</th>
                                 <th>Section</th>
                                 <th>Roll No</th>
@@ -2040,10 +2051,13 @@ async function generateReport() {
             `;
             
             students.forEach(student => {
-                const schoolName = allSchools.find(s => s.id === student.school_id)?.school_name || 'Unknown';
+                const school = allSchools.find(s => s.id === student.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
                 html += `
                     <tr>
                         <td>${schoolName}</td>
+                        <td>${dist}</td>
                         <td>${classDisplayName(student.class_number)}</td>
                         <td>${student.section}</td>
                         <td>${student.roll_number}</td>
@@ -2120,6 +2134,7 @@ async function generateReport() {
                         <thead>
                             <tr>
                                 <th>School</th>
+                                <th>District</th>
                                 <th>Name of the Post</th>
                                 <th>Status</th>
                                 <th>Name of the Employee</th>
@@ -2134,7 +2149,9 @@ async function generateReport() {
             `;
             
             list.forEach(s => {
-                const schoolName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
+                const school = allSchools.find(sc => sc.id === s.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
                 let statusHtml = '<span class="badge badge-fail">Vacant</span>';
                 if (s.status === 'Filled') statusHtml = '<span class="badge badge-pass">Filled</span>';
                 else if (s.status === 'Not Sanctioned') statusHtml = '<span class="badge badge-warning">Not Sanctioned</span>';
@@ -2142,6 +2159,7 @@ async function generateReport() {
                 html += `
                     <tr>
                         <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+                        <td style="font-weight: 500; color: #3b82f6;">${dist}</td>
                         <td style="font-weight: 500;">${s.post_name}</td>
                         <td>${statusHtml}</td>
                         <td>${s.employee_name || '-'}</td>
@@ -2169,6 +2187,7 @@ async function generateReport() {
                         <thead>
                             <tr>
                                 <th>School Name</th>
+                                <th>District</th>
                                 <th>Username</th>
                                 <th>Password</th>
                                 <th>Admin Status</th>
@@ -2182,6 +2201,7 @@ async function generateReport() {
                 html += `
                     <tr>
                         <td>${s.school_name}</td>
+                        <td>${s.district || '-'}</td>
                         <td><code>${s.username}</code></td>
                         <td><code>${s.password}</code></td>
                         <td>${s.is_admin ? '<span class="badge badge-pass">Admin</span>' : '<span class="badge badge-info">School</span>'}</td>
@@ -2809,6 +2829,7 @@ async function exportAdminStaffingExcel() {
         return {
             'S.No': index + 1,
             'Name of the School': schoolName,
+            'District': school ? school.district || '-' : '-',
             'Name of the Post': item.post_name,
             'Status': item.status,
             'Name of the Employee': item.employee_name || '-',
@@ -2841,13 +2862,15 @@ async function exportAdminStaffingPDF() {
     doc.setFontSize(10);
     doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 14, 22);
     
-    const head = [['S.No', 'School Name', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
+    const head = [['S.No', 'School Name', 'District', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
     const body = adminStaffingData.map((item, index) => {
         const school = allSchools.find(s => s.id === item.school_id);
         const schoolName = school ? school.school_name : 'Unknown';
+        const dist = school ? school.district || '-' : '-';
         return [
             index + 1,
             schoolName,
+            dist,
             item.post_name,
             item.status,
             item.employee_name || '-',
