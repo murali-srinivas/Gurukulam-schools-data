@@ -2007,6 +2007,7 @@ function toggleStaffingFields() {
     empNameInput.required = true;
     empTypeSelect.required = true;
     joinDateInput.required = true;
+    toggleStaffingEmploymentType();
   } else {
     fieldsContainer.style.display = 'none';
     empNameInput.required = false;
@@ -2019,6 +2020,24 @@ function toggleStaffingFields() {
     joinDateInput.value = '';
     aadharInput.value = '';
     apcosInput.value = '';
+  }
+}
+
+function toggleStaffingEmploymentType() {
+  const typeSelect = document.getElementById('staffing-employment-type');
+  const apcosInput = document.getElementById('staffing-apcos');
+  const apcosGroup = document.getElementById('staffing-apcos-group');
+  if (!typeSelect || !apcosInput || !apcosGroup) return;
+
+  if (typeSelect.value === 'Out Sourcing') {
+    apcosGroup.style.display = 'block';
+    apcosInput.disabled = false;
+    apcosInput.placeholder = 'Enter APCOS ID';
+  } else {
+    apcosGroup.style.display = 'none';
+    apcosInput.disabled = true;
+    apcosInput.value = '';
+    apcosInput.placeholder = 'APCOS ID is disabled for this type';
   }
 }
 
