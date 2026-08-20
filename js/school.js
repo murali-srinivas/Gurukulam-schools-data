@@ -1414,7 +1414,7 @@ function renderStaffTable() {
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No staff records found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center">No staff records found.</td></tr>';
     return;
   }
   
@@ -1429,13 +1429,297 @@ function renderStaffTable() {
       <td>${s.staff_name}</td>
       <td>${s.designation}</td>
       <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
+      <td>${s.caste || '-'}</td>
+      <td>${s.sub_caste || '-'}</td>
+      <td>${s.first_appointment_date ? new Date(s.first_appointment_date).toLocaleDateString() : '-'}</td>
       <td>${formatQualificationSummary(s)}</td>
       <td>${s.subject}</td>
       <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
       <td>${s.joined_institution_date ? new Date(s.joined_institution_date).toLocaleDateString() : '-'}</td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline" onclick="openStaffModal('${s.id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteStaff('${s.id}', '${s.staff_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+async function openStaffModal(id = '') {
+  const select = document.getElementById('staff-particular-select');
+  if (select) {
+    select.innerHTML = '<option value="">Loading filled positions...</option>';
+    try {
+      const { data, error } = await supabase
+        .from('staffing_particulars')
+        .select('*')
+        .eq('school_id', currentSchool.id)
+        .eq('status', 'Filled')
+        .order('employee_name');
+      if (!error && data) {
+        select.innerHTML = '<option value="">Select from Staffing Particulars</option>';
+        data.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = `${item.employee_name} (${item.post_name} - ${item.employment_type})`;
+          opt.dataset.name = item.employee_name;
+          opt.dataset.post = item.post_name;
+          opt.dataset.type = item.employment_type;
+          opt.dataset.joining = item.joining_date || '';
+          select.appendChild(opt);
+        });
+      } else {
+        select.innerHTML = '<option value="">Failed to load staffing particulars</option>';
+      }
+    } catch (e) {
+      select.innerHTML = '<option value="">Error loading staffing particulars</option>';
+    }
+  }
+
+  const modal = document.getElementById('staff-modal');
+  const title = document.getElementById('staff-modal-title');
+  const form = document.getElementById('staff-form');
+  
+  form.reset();
+  document.getElementById('staff-edit-id').value = id;
+  
+  // Disable all text/select qualification inputs by default
+  const qualTable = form.querySelector('.table-container table');
+  if (qualTable) {
+    qualTable.querySelectorAll('input[type="text"], select').forEach(inp => {
+      inp.disabled = true;
+      inp.removeAttribute('required');
+    });
+  }
+
+  if (id) {
+    title.textContent = 'Edit Staff Member';
+    const staff = allStaff.find(s => s.id === id);
+    if (staff) {
+      document.getElementById('staff-name').value = staff.staff_name;
+      document.getElementById('staff-designation').value = staff.designation;
+      document.getElementById('staff-emp-type').value = staff.employment_type;
+      document.getElementById('staff-caste').value = staff.caste || '';
+      document.getElementById('staff-sub-caste').value = staff.sub_caste || '';
+      document.getElementById('staff-first-appointment').value = staff.first_appointment_date || '';
+      document.getElementById('staff-subject').value = staff.subject;
+      document.getElementById('staff-phone1').value = staff.phone_1 || '';
+      document.getElementById('staff-phone2').value = staff.phone_2 || '';
+      document.getElementById('staff-joined-service').value = staff.joined_service_date || '';
+      document.getElementById('staff-joined-institution').value = staff.joined_institution_date || '';
+
+      // Qualifications
+      document.getElementById('staff-qual-inter').checked = staff.qualification_inter;
+      
+      document.getElementById('staff-qual-degree').checked = staff.qualification_degree;
+      if (staff.qualification_degree) {
+        const degType = document.getElementById('staff-qual-degree-type');
+        degType.disabled = false; degType.value = staff.degree_type || '';
+        const degSub = document.getElementById('staff-qual-degree-sub');
+        degSub.disabled = false; degSub.value = staff.degree_subjects || '';
+        const degMarks = document.getElementById('staff-qual-degree-marks');
+        degMarks.disabled = false; degMarks.value = staff.degree_marks || '';
+      }
+
+      document.getElementById('staff-qual-pg').checked = staff.qualification_pg;
+      if (staff.qualification_pg) {
+        const pgType = document.getElementById('staff-qual-pg-type');
+        pgType.disabled = false; pgType.value = staff.pg_type || '';
+        const pgSub = document.getElementById('staff-qual-pg-sub');
+        pgSub.disabled = false; pgSub.value = staff.pg_subjects || '';
+        const pgMarks = document.getElementById('staff-qual-pg-marks');
+        pgMarks.disabled = false; pgMarks.value = staff.pg_marks || '';
+      }
+
+      document.getElementById('staff-qual-bed').checked = staff.qualification_bed;
+      if (staff.qualification_bed) {
+        const bedSub = document.getElementById('staff-qual-bed-sub');
+        bedSub.disabled = false; bedSub.value = staff.bed_subjects || '';
+        const bedMarks = document.getElementById('staff-qual-bed-marks');
+        bedMarks.disabled = false; bedMarks.value = staff.bed_marks || '';
+      }
+
+      document.getElementById('staff-qual-pandit').checked = staff.qualification_pandit;
+      if (staff.qualification_pandit) {
+        const panSub = document.getElementById('staff-qual-pandit-sub');
+        panSub.disabled = false; panSub.value = staff.pandit_subjects || '';
+        const panMarks = document.getElementById('staff-qual-pandit-marks');
+        panMarks.disabled = false; panMarks.value = staff.pandit_marks || '';
+      }
+
+      document.getElementById('staff-qual-tet1').checked = staff.qualification_tet_p1;
+      if (staff.qualification_tet_p1) {
+        const tet1Sub = document.getElementById('staff-qual-tet1-sub');
+        tet1Sub.disabled = false; tet1Sub.value = staff.tet_p1_subjects || '';
+        const tet1Marks = document.getElementById('staff-qual-tet1-marks');
+        tet1Marks.disabled = false; tet1Marks.value = staff.tet_p1_marks || '';
+      }
+
+      document.getElementById('staff-qual-tet2').checked = staff.qualification_tet_p2;
+      if (staff.qualification_tet_p2) {
+        const tet2Sub = document.getElementById('staff-qual-tet2-sub');
+        tet2Sub.disabled = false; tet2Sub.value = staff.tet_p2_subjects || '';
+        const tet2Marks = document.getElementById('staff-qual-tet2-marks');
+        tet2Marks.disabled = false; tet2Marks.value = staff.tet_p2_marks || '';
+      }
+
+      if (staff.qualification_others) {
+        document.getElementById('staff-qual-others').checked = true;
+        const othDesc = document.getElementById('staff-qual-others-desc');
+        othDesc.disabled = false; othDesc.value = staff.qualification_others;
+      }
+    }
+  } else {
+    title.textContent = 'Add Staff Member';
+  }
+  modal.classList.remove('hidden');
+}
+
+function closeStaffModal() {
+  document.getElementById('staff-modal').classList.add('hidden');
+}
+
+function onStaffParticularSelectChange() {
+  const select = document.getElementById('staff-particular-select');
+  const opt = select.options[select.selectedIndex];
+  if (!opt || !opt.value) return;
+
+  document.getElementById('staff-name').value = opt.dataset.name || '';
+  document.getElementById('staff-designation').value = opt.dataset.post || '';
+  document.getElementById('staff-emp-type').value = opt.dataset.type || '';
+  document.getElementById('staff-joined-institution').value = opt.dataset.joining || '';
+}
+
+async function saveStaff(event) {
+  event.preventDefault();
+  showLoading();
+  
+  const id = document.getElementById('staff-edit-id').value;
+  const name = document.getElementById('staff-name').value.trim();
+  const designation = document.getElementById('staff-designation').value;
+  const empType = document.getElementById('staff-emp-type').value;
+  const caste = document.getElementById('staff-caste').value.trim();
+  const subCaste = document.getElementById('staff-sub-caste').value.trim();
+  const firstApptDate = document.getElementById('staff-first-appointment').value;
+  const subject = document.getElementById('staff-subject').value.trim();
+  const phone1 = document.getElementById('staff-phone1').value.trim();
+  const phone2 = document.getElementById('staff-phone2').value.trim();
+  const joinedService = document.getElementById('staff-joined-service').value;
+  const joinedInstitution = document.getElementById('staff-joined-institution').value;
+
+  // Quals
+  const qualInter = document.getElementById('staff-qual-inter').checked;
+  const qualDegree = document.getElementById('staff-qual-degree').checked;
+  const degreeType = qualDegree ? document.getElementById('staff-qual-degree-type').value : null;
+  const degreeSub = qualDegree ? document.getElementById('staff-qual-degree-sub').value.trim() : null;
+  const degreeMarks = qualDegree ? document.getElementById('staff-qual-degree-marks').value.trim() : null;
+
+  const qualPg = document.getElementById('staff-qual-pg').checked;
+  const pgType = qualPg ? document.getElementById('staff-qual-pg-type').value : null;
+  const pgSub = qualPg ? document.getElementById('staff-qual-pg-sub').value.trim() : null;
+  const pgMarks = qualPg ? document.getElementById('staff-qual-pg-marks').value.trim() : null;
+
+  const qualBed = document.getElementById('staff-qual-bed').checked;
+  const bedSub = qualBed ? document.getElementById('staff-qual-bed-sub').value.trim() : null;
+  const bedMarks = qualBed ? document.getElementById('staff-qual-bed-marks').value.trim() : null;
+
+  const qualPandit = document.getElementById('staff-qual-pandit').checked;
+  const panditSub = qualPandit ? document.getElementById('staff-qual-pandit-sub').value.trim() : null;
+  const panditMarks = qualPandit ? document.getElementById('staff-qual-pandit-marks').value.trim() : null;
+
+  const qualTet1 = document.getElementById('staff-qual-tet1').checked;
+  const tet1Sub = qualTet1 ? document.getElementById('staff-qual-tet1-sub').value.trim() : null;
+  const tet1Marks = qualTet1 ? document.getElementById('staff-qual-tet1-marks').value.trim() : null;
+
+  const qualTet2 = document.getElementById('staff-qual-tet2').checked;
+  const tet2Sub = qualTet2 ? document.getElementById('staff-qual-tet2-sub').value.trim() : null;
+  const tet2Marks = qualTet2 ? document.getElementById('staff-qual-tet2-marks').value.trim() : null;
+
+  const qualOthers = document.getElementById('staff-qual-others').checked;
+  const othersDesc = qualOthers ? document.getElementById('staff-qual-others-desc').value.trim() : null;
+
+  const payload = {
+    school_id: currentSchool.id,
+    staff_name: name,
+    designation: designation,
+    employment_type: empType,
+    caste: caste || null,
+    sub_caste: subCaste || null,
+    first_appointment_date: firstApptDate || null,
+    subject: subject,
+    phone_1: phone1 || null,
+    phone_2: phone2 || null,
+    joined_service_date: joinedService || null,
+    joined_institution_date: joinedInstitution || null,
+    qualification_inter: qualInter,
+    qualification_degree: qualDegree,
+    degree_type: degreeType,
+    degree_subjects: degreeSub,
+    degree_marks: degreeMarks,
+    qualification_pg: qualPg,
+    pg_type: pgType,
+    pg_subjects: pgSub,
+    pg_marks: pgMarks,
+    qualification_bed: qualBed,
+    bed_subjects: bedSub,
+    bed_marks: bedMarks,
+    qualification_pandit: qualPandit,
+    pandit_subjects: panditSub,
+    pandit_marks: panditMarks,
+    qualification_tet_p1: qualTet1,
+    tet_p1_subjects: tet1Sub,
+    tet_p1_marks: tet1Marks,
+    qualification_tet_p2: qualTet2,
+    tet_p2_subjects: tet2Sub,
+    tet_p2_marks: tet2Marks,
+    qualification_others: othersDesc
+  };
+
+  try {
+    let error;
+    if (id) {
+      const { error: err } = await supabase
+        .from('staff')
+        .update(payload)
+        .eq('id', id);
+      error = err;
+    } else {
+      const { error: err } = await supabase
+        .from('staff')
+        .insert([payload]);
+      error = err;
+    }
+
+    if (error) throw error;
+    
+    showToast('Staff saved successfully', 'success');
+    closeStaffModal();
+    await loadStaffTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function deleteStaff(id, name) {
+  if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+  showLoading();
+  try {
+    const { error } = await supabase
+      .from('staff')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    showToast('Staff deleted successfully', 'success');
+    await loadStaffTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function loadStaffTable() {

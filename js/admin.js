@@ -1321,6 +1321,9 @@ async function exportAdminExcel() {
                     'Staff Name': s.staff_name,
                     'Designation': s.designation,
                     'Employment Type': s.employment_type,
+                    'Caste': s.caste || '-',
+                    'Sub-Caste': s.sub_caste || '-',
+                    'Date of first appointment': s.first_appointment_date || '-',
                     'Subject': s.subject,
                     'Qualifications': formatQualificationSummary(s),
                     'Joined Service': s.joined_service_date || '-',
@@ -1686,7 +1689,7 @@ async function exportAdminPDF() {
             const school = allSchools.find(s => s.id === schoolId);
             const schoolName = school ? school.school_name : 'All Schools';
             
-            const head = [['School', 'Staff Name', 'Designation', 'Type', 'Subject', 'Qualifications']];
+            const head = [['School', 'Staff Name', 'Designation', 'Type', 'Caste', 'Sub-Caste', 'First Appt', 'Subject', 'Qualifications']];
             const body = staffList.map(s => {
                 const sName = allSchools.find(sc => sc.id === s.school_id)?.school_name || 'Unknown';
                 return [
@@ -1694,6 +1697,9 @@ async function exportAdminPDF() {
                     s.staff_name,
                     s.designation,
                     s.employment_type,
+                    s.caste || '-',
+                    s.sub_caste || '-',
+                    s.first_appointment_date || '-',
                     s.subject,
                     formatQualificationSummary(s)
                 ];
@@ -2092,6 +2098,9 @@ async function generateReport() {
                                 <th>Name</th>
                                 <th>Designation</th>
                                 <th>Type</th>
+                                <th>Caste</th>
+                                <th>Sub-Caste</th>
+                                <th>First Appt</th>
                                 <th>Subject</th>
                                 <th>Qualifications</th>
                             </tr>
@@ -2107,6 +2116,9 @@ async function generateReport() {
                         <td>${s.staff_name}</td>
                         <td>${s.designation}</td>
                         <td>${s.employment_type}</td>
+                        <td>${s.caste || '-'}</td>
+                        <td>${s.sub_caste || '-'}</td>
+                        <td>${s.first_appointment_date ? new Date(s.first_appointment_date).toLocaleDateString() : '-'}</td>
                         <td>${s.subject}</td>
                         <td>${formatQualificationSummary(s)}</td>
                     </tr>
@@ -2271,7 +2283,7 @@ function renderAdminStaff() {
     });
     
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No staff records found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center">No staff records found.</td></tr>';
         return;
     }
     
@@ -2289,6 +2301,9 @@ function renderAdminStaff() {
             <td>${s.staff_name}</td>
             <td>${s.designation}</td>
             <td><span class="badge ${badgeClass}">${s.employment_type}</span></td>
+            <td>${s.caste || '-'}</td>
+            <td>${s.sub_caste || '-'}</td>
+            <td>${s.first_appointment_date ? new Date(s.first_appointment_date).toLocaleDateString() : '-'}</td>
             <td>${formatQualificationSummary(s)}</td>
             <td>${s.subject}</td>
             <td>${s.joined_service_date ? new Date(s.joined_service_date).toLocaleDateString() : '-'}</td>
@@ -2335,6 +2350,10 @@ function openAdminStaffModal(id = null) {
     form.reset();
     document.getElementById('admin-staff-edit-id').value = '';
     
+    // Clear and reset the particular selection dropdown
+    const select = document.getElementById('admin-staff-particular-select');
+    if (select) select.innerHTML = '<option value="">Select from Staffing Particulars</option>';
+    
     if (id) {
         const s = adminStaffData.find(item => item.id === id);
         if (s) {
@@ -2344,6 +2363,9 @@ function openAdminStaffModal(id = null) {
             document.getElementById('admin-staff-name').value = s.staff_name;
             document.getElementById('admin-staff-designation').value = s.designation;
             document.getElementById('admin-staff-emp-type').value = s.employment_type;
+            document.getElementById('admin-staff-caste').value = s.caste || '';
+            document.getElementById('admin-staff-sub-caste').value = s.sub_caste || '';
+            document.getElementById('admin-staff-first-appointment').value = s.first_appointment_date || '';
             document.getElementById('admin-staff-subject').value = s.subject;
             document.getElementById('admin-staff-joined-service').value = s.joined_service_date || '';
             document.getElementById('admin-staff-joined-institution').value = s.joined_institution_date || '';
@@ -2351,12 +2373,15 @@ function openAdminStaffModal(id = null) {
             document.getElementById('admin-staff-phone2').value = s.phone_2 || '';
             
             populateQualFormFields('admin-staff', s);
+            // Fetch staffing particulars for the edited school
+            onAdminStaffSchoolSelectChange();
         }
     } else {
         title.textContent = 'Add Staff Member';
         populateQualFormFields('admin-staff', null);
         if (allSchools.length > 0) {
             document.getElementById('admin-staff-school-select').value = allSchools[0].id;
+            onAdminStaffSchoolSelectChange();
         }
     }
     
@@ -2367,6 +2392,55 @@ function closeAdminStaffModal() {
     document.getElementById('admin-staff-modal').classList.add('hidden');
 }
 
+async function onAdminStaffSchoolSelectChange() {
+    const schoolId = document.getElementById('admin-staff-school-select').value;
+    const select = document.getElementById('admin-staff-particular-select');
+    if (!select) return;
+    
+    if (!schoolId) {
+        select.innerHTML = '<option value="">Select from Staffing Particulars</option>';
+        return;
+    }
+    
+    select.innerHTML = '<option value="">Loading filled positions...</option>';
+    try {
+        const { data, error } = await supabase
+            .from('staffing_particulars')
+            .select('*')
+            .eq('school_id', schoolId)
+            .eq('status', 'Filled')
+            .order('employee_name');
+        if (!error && data) {
+            select.innerHTML = '<option value="">Select from Staffing Particulars</option>';
+            data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = `${item.employee_name} (${item.post_name} - ${item.employment_type})`;
+                opt.dataset.name = item.employee_name;
+                opt.dataset.post = item.post_name;
+                opt.dataset.type = item.employment_type;
+                opt.dataset.joining = item.joining_date || '';
+                select.appendChild(opt);
+            });
+        } else {
+            select.innerHTML = '<option value="">Failed to load staffing particulars</option>';
+        }
+    } catch (e) {
+        select.innerHTML = '<option value="">Error loading staffing particulars</option>';
+    }
+}
+
+function onAdminStaffParticularSelectChange() {
+    const select = document.getElementById('admin-staff-particular-select');
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) return;
+
+    document.getElementById('admin-staff-name').value = opt.dataset.name || '';
+    document.getElementById('admin-staff-designation').value = opt.dataset.post || '';
+    document.getElementById('admin-staff-emp-type').value = opt.dataset.type || '';
+    document.getElementById('admin-staff-joined-institution').value = opt.dataset.joining || '';
+}
+
 async function saveAdminStaff(event) {
     event.preventDefault();
     
@@ -2375,6 +2449,9 @@ async function saveAdminStaff(event) {
     const name = document.getElementById('admin-staff-name').value.trim();
     const designation = document.getElementById('admin-staff-designation').value.trim();
     const empType = document.getElementById('admin-staff-emp-type').value;
+    const caste = document.getElementById('admin-staff-caste').value.trim();
+    const subCaste = document.getElementById('admin-staff-sub-caste').value.trim();
+    const firstAppt = document.getElementById('admin-staff-first-appointment').value || null;
     const subject = document.getElementById('admin-staff-subject').value.trim();
     const joinedService = document.getElementById('admin-staff-joined-service').value || null;
     const joinedInst = document.getElementById('admin-staff-joined-institution').value || null;
@@ -2388,6 +2465,9 @@ async function saveAdminStaff(event) {
         staff_name: name,
         designation: designation,
         employment_type: empType,
+        caste: caste || null,
+        sub_caste: subCaste || null,
+        first_appointment_date: firstAppt,
         subject: subject,
         joined_service_date: joinedService,
         joined_institution_date: joinedInst,
@@ -2445,6 +2525,9 @@ async function exportAdminStaffExcel() {
             'Name of the Staff': s.staff_name,
             'Designation': s.designation,
             'Employment Type': s.employment_type,
+            'Caste': s.caste || '-',
+            'Sub-Caste': s.sub_caste || '-',
+            'Date of first appointment': s.first_appointment_date || '-',
             'Subject': s.subject,
             'Joined in Service': s.joined_service_date || '',
             'Working at Institution': s.joined_institution_date || '',
@@ -2465,7 +2548,7 @@ async function exportAdminStaffPDF() {
         return;
     }
     
-    const head = [['Name of the Staff', 'Designation', 'Type', 'Subject', 'Joined Service', 'Joined Inst', 'School Name']];
+    const head = [['Name of the Staff', 'Designation', 'Type', 'Caste', 'Sub-Caste', 'First Appt', 'Subject', 'Joined Service', 'Joined Inst', 'School Name']];
     const body = adminStaffData.map(s => {
         const school = allSchools.find(sc => sc.id === s.school_id);
         const schoolName = school ? school.school_name : 'Unknown School';
@@ -2473,6 +2556,9 @@ async function exportAdminStaffPDF() {
             s.staff_name,
             s.designation,
             s.employment_type,
+            s.caste || '-',
+            s.sub_caste || '-',
+            s.first_appointment_date || '-',
             s.subject,
             s.joined_service_date || '-',
             s.joined_institution_date || '-',

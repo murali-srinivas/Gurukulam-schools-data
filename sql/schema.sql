@@ -290,6 +290,15 @@ ON CONFLICT (username) DO NOTHING;
 -- CREATE POLICY "Allow all on outsourcing_attendance" ON outsourcing_attendance
 --     FOR ALL USING (true) WITH CHECK (true);
 
+-- ============================================
+-- MIGRATION: Add caste, sub_caste, first_appointment_date to staff table
+-- Run this in Supabase SQL editor:
+-- ============================================
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS caste TEXT;
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS sub_caste TEXT;
+-- ALTER TABLE staff ADD COLUMN IF NOT EXISTS first_appointment_date DATE;
+
+
 
 
 

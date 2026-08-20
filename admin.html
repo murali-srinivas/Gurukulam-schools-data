@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=6.3">
+  <link rel="stylesheet" href="css/styles.css?v=6.4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -464,6 +464,9 @@
                   <th>Name of the Staff</th>
                   <th>Designation</th>
                   <th>Regular/Out Sourcing</th>
+                  <th>Caste</th>
+                  <th>Sub-Caste</th>
+                  <th>First Appointment</th>
                   <th>Qualification</th>
                   <th>Subject</th>
                   <th>Joined Service</th>
@@ -533,8 +536,14 @@
         <input type="hidden" id="admin-staff-edit-id">
         <div class="form-group">
           <label class="form-label">School</label>
-          <select class="form-select" id="admin-staff-school-select" required>
+          <select class="form-select" id="admin-staff-school-select" required onchange="onAdminStaffSchoolSelectChange()">
             <!-- Will be populated by JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color: #3b82f6;"><i class="fas fa-magic"></i> Auto-populate from Staffing Particulars (Optional)</label>
+          <select class="form-select" id="admin-staff-particular-select" onchange="onAdminStaffParticularSelectChange()">
+            <option value="">Select from Staffing Particulars</option>
           </select>
         </div>
         <div class="form-group">
@@ -577,9 +586,25 @@
             <option value="MTS">MTS</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Subject</label>
-          <input type="text" class="form-input" id="admin-staff-subject" required placeholder="e.g. Mathematics, English">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Caste</label>
+            <input type="text" class="form-input" id="admin-staff-caste" placeholder="e.g. BC-A, SC, ST, OC">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sub-Caste</label>
+            <input type="text" class="form-input" id="admin-staff-sub-caste" placeholder="e.g. Madiga, Mala, Kapu">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date of first appointment</label>
+            <input type="date" class="form-input" id="admin-staff-first-appointment">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <input type="text" class="form-input" id="admin-staff-subject" required placeholder="e.g. Mathematics, English">
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Qualifications Details</label>
@@ -970,8 +995,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=6.3"></script>
-<script src="js/auth.js?v=6.3"></script>
-<script src="js/admin.js?v=6.3"></script>
+<script src="js/supabase-config.js?v=6.4"></script>
+<script src="js/auth.js?v=6.4"></script>
+<script src="js/admin.js?v=6.4"></script>
 </body>
 </html>
