@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=6.9">
+  <link rel="stylesheet" href="css/styles.css?v=7.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -268,9 +268,40 @@
               <label>Section</label>
               <select id="report-filter-section"><option value="">All</option><option value="A">A</option><option value="B">B</option></select>
             </div>
-            <div class="filter-group">
+             <div class="filter-group">
               <label>Exam</label>
               <select id="report-filter-exam"><option value="">All Exams</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
+            </div>
+            <div class="filter-group" id="report-filter-district-group" style="display: none;">
+              <label>District</label>
+              <select id="report-filter-district">
+                <option value="">All Districts</option>
+              </select>
+            </div>
+            <div class="filter-group" id="report-filter-post-group" style="display: none;">
+              <label>Name of the Post</label>
+              <select id="report-filter-post">
+                <option value="">All Posts</option>
+              </select>
+            </div>
+            <div class="filter-group" id="report-filter-status-group" style="display: none;">
+              <label>Status</label>
+              <select id="report-filter-status">
+                <option value="">All Statuses</option>
+                <option value="Filled">Filled</option>
+                <option value="Vacant">Vacant</option>
+                <option value="Not Sanctioned">Not Sanctioned</option>
+              </select>
+            </div>
+            <div class="filter-group" id="report-filter-emptype-group" style="display: none;">
+              <label>Type of Employment</label>
+              <select id="report-filter-emptype">
+                <option value="">All Types</option>
+                <option value="Regular">Regular</option>
+                <option value="Out Sourcing">Out Sourcing</option>
+                <option value="Contract">Contract</option>
+                <option value="MTS">MTS</option>
+              </select>
             </div>
           </div>
           <div class="card-body">
@@ -1004,8 +1035,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=6.9"></script>
-<script src="js/auth.js?v=6.9"></script>
-<script src="js/admin.js?v=6.9"></script>
+<script src="js/supabase-config.js?v=7.0"></script>
+<script src="js/auth.js?v=7.0"></script>
+<script src="js/admin.js?v=7.0"></script>
 </body>
 </html>

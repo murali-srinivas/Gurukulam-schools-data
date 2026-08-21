@@ -1,4 +1,14 @@
 let allSchools = [];
+const STAFFING_POSTS = [
+    "Principals(C)", "Principals(S)", "JL-Telugu", "JL-Hindi", "JL-English", "JL-Maths",
+    "JL-Physics", "JL-Chemistry", "JL-Botany", "JL-Zoology", "JL-History", "JL-Commerce",
+    "JL-Civics", "JL-Economics", "JL-Vocational", "PD-College", "PGT-Telugu", "PGT-Hindi",
+    "PGT-English", "PGT-Maths", "PGT-PS", "PGT-NS", "PGT-SS", "PD-School", "TGT-Telugu",
+    "TGT-Hindi", "TGT-English", "TGT-Maths", "TGT-Science", "TGT-Social", "PET",
+    "Art & Craft", "Librarian", "Supndt", "Sr Asst", "Jr Asst", "DEO", "Record Asst", "Lab Asst",
+    "Attender", "Cook", "Kitchen Helper", "MPW", "Ayah", "Staff Nurse/ANM", "Accountant",
+    "CRT Teacher", "Night Watchman"
+];
 
 function getGenderLabel(gender) {
     if (gender === 'Female') return 'Girl';
@@ -1047,6 +1057,53 @@ function onAdminReportTypeChange() {
         examSelect.value = '';
         examSelect.disabled = true;
     }
+    const districtGrp = document.getElementById('report-filter-district-group');
+    const postGrp = document.getElementById('report-filter-post-group');
+    const statusGrp = document.getElementById('report-filter-status-group');
+    const empTypeGrp = document.getElementById('report-filter-emptype-group');
+    
+    const districtSelect = document.getElementById('report-filter-district');
+    const postSelect = document.getElementById('report-filter-post');
+    const statusSelect = document.getElementById('report-filter-status');
+    const empTypeSelect = document.getElementById('report-filter-emptype');
+
+    if (type === 'staffing_particulars') {
+        if (districtGrp) districtGrp.style.display = 'block';
+        if (postGrp) postGrp.style.display = 'block';
+        if (statusGrp) statusGrp.style.display = 'block';
+        if (empTypeGrp) empTypeGrp.style.display = 'block';
+        
+        // Populate districts
+        if (districtSelect && districtSelect.children.length <= 1) {
+            const districts = [...new Set(allSchools.map(s => s.district).filter(Boolean))].sort();
+            districts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                districtSelect.appendChild(opt);
+            });
+        }
+        // Populate posts
+        if (postSelect && postSelect.children.length <= 1) {
+            STAFFING_POSTS.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                postSelect.appendChild(opt);
+            });
+        }
+    } else {
+        if (districtGrp) districtGrp.style.display = 'none';
+        if (postGrp) postGrp.style.display = 'none';
+        if (statusGrp) statusGrp.style.display = 'none';
+        if (empTypeGrp) empTypeGrp.style.display = 'none';
+        
+        // Reset filter values
+        if (districtSelect) districtSelect.value = '';
+        if (postSelect) postSelect.value = '';
+        if (statusSelect) statusSelect.value = '';
+        if (empTypeSelect) empTypeSelect.value = '';
+    }
 }
 
 async function exportAdminExcel() {
@@ -1338,19 +1395,35 @@ async function exportAdminExcel() {
             XLSX.writeFile(workbook, fileName);
             showToast('Staff export successful', 'success');
         } else if (type === 'staffing_particulars') {
+            const filterDistrict = document.getElementById('report-filter-district').value;
+            const filterPost = document.getElementById('report-filter-post').value;
+            const filterStatus = document.getElementById('report-filter-status').value;
+            const filterEmpType = document.getElementById('report-filter-emptype').value;
+
             let staffingQuery = supabase.from('staffing_particulars').select('*');
             if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
             
             const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
             if (staffError) throw staffError;
             
-            if (!list || list.length === 0) {
+            let filteredList = list || [];
+            if (filterDistrict) {
+                filteredList = filteredList.filter(item => {
+                    const school = allSchools.find(s => s.id === item.school_id);
+                    return school && school.district === filterDistrict;
+                });
+            }
+            
+            if (filteredList.length === 0) {
                 showToast('No staffing records found for export', 'warning');
                 hideLoading();
                 return;
             }
             
-            const reportData = list.map((item, index) => {
+            const reportData = filteredList.map((item, index) => {
                 const school = allSchools.find(s => s.id === item.school_id);
                 const schoolName = school ? school.school_name : 'Unknown';
                 return {
@@ -1715,13 +1788,29 @@ async function exportAdminPDF() {
             doc.save(`Staff_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Staff PDF export successful', 'success');
         } else if (type === 'staffing_particulars') {
+            const filterDistrict = document.getElementById('report-filter-district').value;
+            const filterPost = document.getElementById('report-filter-post').value;
+            const filterStatus = document.getElementById('report-filter-status').value;
+            const filterEmpType = document.getElementById('report-filter-emptype').value;
+
             let staffingQuery = supabase.from('staffing_particulars').select('*');
             if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
             
             const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
             if (staffError) throw staffError;
             
-            if (!list || list.length === 0) {
+            let filteredList = list || [];
+            if (filterDistrict) {
+                filteredList = filteredList.filter(item => {
+                    const school = allSchools.find(s => s.id === item.school_id);
+                    return school && school.district === filterDistrict;
+                });
+            }
+            
+            if (filteredList.length === 0) {
                 showToast('No staffing records found for export', 'warning');
                 hideLoading();
                 return;
@@ -1731,7 +1820,7 @@ async function exportAdminPDF() {
             const schoolName = school ? school.school_name : 'All Schools';
             
             const head = [['S.No', 'School Name', 'District', 'Name of the Post', 'Status', 'Employee Name', 'Type', 'Date of Joining', 'Aadhar No', 'APCOS ID', 'Remarks']];
-            const body = list.map((item, index) => {
+            const body = filteredList.map((item, index) => {
                 const school = allSchools.find(sc => sc.id === item.school_id);
                 const sName = school ? school.school_name : 'Unknown';
                 const dist = school ? school.district || '-' : '-';
@@ -2128,13 +2217,29 @@ async function generateReport() {
             html += `</tbody></table></div>`;
             previewContainer.innerHTML = html;
         } else if (type === 'staffing_particulars') {
+            const filterDistrict = document.getElementById('report-filter-district').value;
+            const filterPost = document.getElementById('report-filter-post').value;
+            const filterStatus = document.getElementById('report-filter-status').value;
+            const filterEmpType = document.getElementById('report-filter-emptype').value;
+
             let staffingQuery = supabase.from('staffing_particulars').select('*');
             if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
             
             const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
             if (staffError) throw staffError;
             
-            if (!list || list.length === 0) {
+            let filteredList = list || [];
+            if (filterDistrict) {
+                filteredList = filteredList.filter(item => {
+                    const school = allSchools.find(s => s.id === item.school_id);
+                    return school && school.district === filterDistrict;
+                });
+            }
+            
+            if (filteredList.length === 0) {
                 previewContainer.innerHTML = '<div class="text-center p-4">No staffing records found.</div>';
                 hideLoading();
                 return;
@@ -2160,7 +2265,7 @@ async function generateReport() {
                         <tbody>
             `;
             
-            list.forEach(s => {
+            filteredList.forEach(s => {
                 const school = allSchools.find(sc => sc.id === s.school_id);
                 const schoolName = school ? school.school_name : 'Unknown';
                 const dist = school ? school.district || '-' : '-';
