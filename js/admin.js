@@ -1400,14 +1400,35 @@ async function exportAdminExcel() {
             const filterStatus = document.getElementById('report-filter-status').value;
             const filterEmpType = document.getElementById('report-filter-emptype').value;
 
-            let staffingQuery = supabase.from('staffing_particulars').select('*');
-            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
-            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
-            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
-            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
-            
-            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
-            if (staffError) throw staffError;
+            // Fetch ALL staffing particulars using pagination batches
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                let staffingQuery = supabase.from('staffing_particulars').select('*');
+                if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+                if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+                if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+                if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
+                
+                staffingQuery = staffingQuery.limit(batchSize).offset(offset);
+                
+                const { data: batch, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+                if (staffError) throw staffError;
+
+                if (!batch || batch.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(batch);
+                    if (batch.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
             
             let filteredList = list || [];
             if (filterDistrict) {
@@ -1441,9 +1462,7 @@ async function exportAdminExcel() {
                 };
             });
             
-            // Query all staffing particulars to check which schools have at least one entry
-            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
-            if (allStaffingError) throw allStaffingError;
+            const allStaffing = await loadAllStaffingSchoolIds();
             
             const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
             const pendingSchools = allSchools.filter(school => {
@@ -1814,14 +1833,35 @@ async function exportAdminPDF() {
             const filterStatus = document.getElementById('report-filter-status').value;
             const filterEmpType = document.getElementById('report-filter-emptype').value;
 
-            let staffingQuery = supabase.from('staffing_particulars').select('*');
-            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
-            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
-            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
-            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
-            
-            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
-            if (staffError) throw staffError;
+            // Fetch ALL staffing particulars using pagination batches
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                let staffingQuery = supabase.from('staffing_particulars').select('*');
+                if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+                if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+                if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+                if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
+                
+                staffingQuery = staffingQuery.limit(batchSize).offset(offset);
+                
+                const { data: batch, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+                if (staffError) throw staffError;
+
+                if (!batch || batch.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(batch);
+                    if (batch.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
             
             let filteredList = list || [];
             if (filterDistrict) {
@@ -1868,9 +1908,7 @@ async function exportAdminPDF() {
                 styles: { fontSize: 7 }
             });
 
-            // Query all staffing particulars to check which schools have at least one entry
-            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
-            if (allStaffingError) throw allStaffingError;
+            const allStaffing = await loadAllStaffingSchoolIds();
             
             const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
             const pendingSchools = allSchools.filter(school => {
@@ -2276,14 +2314,35 @@ async function generateReport() {
             const filterStatus = document.getElementById('report-filter-status').value;
             const filterEmpType = document.getElementById('report-filter-emptype').value;
 
-            let staffingQuery = supabase.from('staffing_particulars').select('*');
-            if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
-            if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
-            if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
-            if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
-            
-            const { data: list, error: staffError } = await staffingQuery.order('school_id').order('post_name');
-            if (staffError) throw staffError;
+            // Fetch ALL staffing particulars using pagination batches
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                let staffingQuery = supabase.from('staffing_particulars').select('*');
+                if (schoolId) staffingQuery = staffingQuery.eq('school_id', schoolId);
+                if (filterPost) staffingQuery = staffingQuery.eq('post_name', filterPost);
+                if (filterStatus) staffingQuery = staffingQuery.eq('status', filterStatus);
+                if (filterEmpType) staffingQuery = staffingQuery.eq('employment_type', filterEmpType);
+                
+                staffingQuery = staffingQuery.limit(batchSize).offset(offset);
+                
+                const { data: batch, error: staffError } = await staffingQuery.order('school_id').order('post_name');
+                if (staffError) throw staffError;
+
+                if (!batch || batch.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(batch);
+                    if (batch.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
             
             let filteredList = list || [];
             if (filterDistrict) {
@@ -2293,9 +2352,7 @@ async function generateReport() {
                 });
             }
             
-            // Query all staffing particulars to check which schools have at least one entry
-            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
-            if (allStaffingError) throw allStaffingError;
+            const allStaffing = await loadAllStaffingSchoolIds();
             
             const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
             const pendingSchools = allSchools.filter(school => {
@@ -2848,14 +2905,35 @@ async function loadAdminStaffingTable() {
     showLoading();
     try {
         const schoolId = document.getElementById('staffing-filter-school').value;
-        let query = supabase.from('staffing_particulars').select('*');
-        if (schoolId) {
-            query = query.eq('school_id', schoolId);
-        }
         
-        const { data, error } = await query.order('post_name');
-        if (error) throw error;
-        adminStaffingData = data || [];
+        let allData = [];
+        let offset = 0;
+        const batchSize = 1000;
+        let keepFetching = true;
+
+        while (keepFetching) {
+            let query = supabase.from('staffing_particulars').select('*');
+            if (schoolId) {
+                query = query.eq('school_id', schoolId);
+            }
+            query = query.limit(batchSize).offset(offset);
+            
+            const { data, error } = await query.order('post_name');
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                keepFetching = false;
+            } else {
+                allData = allData.concat(data);
+                if (data.length < batchSize) {
+                    keepFetching = false;
+                } else {
+                    offset += batchSize;
+                }
+            }
+        }
+
+        adminStaffingData = allData;
         renderAdminStaffingTable();
     } catch (err) {
         showToast(err.message, 'error');
@@ -3564,6 +3642,31 @@ async function exportAdminOutsourcingAttendancePDF() {
     
     doc.save(`Outsourcing_Attendance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     showToast('Outsourcing attendance PDF export successful', 'success');
+}
+
+async function loadAllStaffingSchoolIds() {
+    let allStaffing = [];
+    let offset = 0;
+    const batchSize = 1000;
+    let keepFetching = true;
+    while (keepFetching) {
+        const { data: batch, error: err } = await supabase.from('staffing_particulars')
+            .select('school_id')
+            .limit(batchSize)
+            .offset(offset);
+        if (err) throw err;
+        if (!batch || batch.length === 0) {
+            keepFetching = false;
+        } else {
+            allStaffing = allStaffing.concat(batch);
+            if (batch.length < batchSize) {
+                keepFetching = false;
+            } else {
+                offset += batchSize;
+            }
+        }
+    }
+    return allStaffing;
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);

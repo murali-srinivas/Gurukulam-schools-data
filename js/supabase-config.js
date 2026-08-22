@@ -19,6 +19,8 @@ class SupabaseQueryBuilder {
         this._body = null;
         this._preferParts = [];
         this._onConflict = null;
+        this._limit = null;
+        this._offset = null;
     }
 
     select(cols, options) {
@@ -79,6 +81,16 @@ class SupabaseQueryBuilder {
         return this;
     }
 
+    limit(num) {
+        this._limit = num;
+        return this;
+    }
+
+    offset(num) {
+        this._offset = num;
+        return this;
+    }
+
     // Make the builder thenable so `await` works directly
     then(resolve, reject) {
         return this._execute().then(resolve, reject);
@@ -110,6 +122,14 @@ class SupabaseQueryBuilder {
         // On conflict
         if (this._onConflict) {
             url.searchParams.set('on_conflict', this._onConflict);
+        }
+
+        // Limit and Offset
+        if (this._limit !== null && this._limit !== undefined) {
+            url.searchParams.set('limit', String(this._limit));
+        }
+        if (this._offset !== null && this._offset !== undefined) {
+            url.searchParams.set('offset', String(this._offset));
         }
 
         // Headers
