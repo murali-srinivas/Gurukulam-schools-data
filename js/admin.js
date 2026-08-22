@@ -1434,7 +1434,7 @@ async function exportAdminExcel() {
                     'Status': item.status,
                     'Name of the Employee': item.employee_name || '-',
                     'Employment Type': item.employment_type || '-',
-                    'Date of Joining': item.joining_date || '-',
+                    'Date of Joining': formatDateDMY(item.joining_date),
                     'Aadhar No': item.aadhar_no || '-',
                     'APCOS ID': item.apcos_id || '-',
                     'Remarks': item.remarks || '-'
@@ -1853,7 +1853,7 @@ async function exportAdminPDF() {
                     item.status,
                     item.employee_name || '-',
                     item.employment_type || '-',
-                    item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+                    formatDateDMY(item.joining_date),
                     item.aadhar_no || '-',
                     item.apcos_id || '-',
                     item.remarks || '-'
@@ -2359,7 +2359,7 @@ async function generateReport() {
                 let statusHtml = '<span class="badge badge-fail">Vacant</span>';
                 if (s.status === 'Filled') statusHtml = '<span class="badge badge-pass">Filled</span>';
                 else if (s.status === 'Not Sanctioned') statusHtml = '<span class="badge badge-warning">Not Sanctioned</span>';
-                const formattedDate = s.joining_date ? new Date(s.joining_date).toLocaleDateString() : '-';
+                const formattedDate = formatDateDMY(s.joining_date);
                 html += `
                     <tr>
                         <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
@@ -2897,7 +2897,7 @@ function renderAdminStaffingTable() {
         else if (item.status === 'Not Sanctioned') badgeClass = 'badge-warning';
         const statusHtml = `<span class="badge ${badgeClass}">${item.status}</span>`;
         
-        const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
+        const formattedDate = formatDateDMY(item.joining_date);
         
         tr.innerHTML = `
             <td>${index + 1}</td>
@@ -3112,7 +3112,7 @@ async function exportAdminStaffingExcel() {
             'Status': item.status,
             'Name of the Employee': item.employee_name || '-',
             'Employment Type': item.employment_type || '-',
-            'Date of Joining': item.joining_date || '-',
+            'Date of Joining': formatDateDMY(item.joining_date),
             'Aadhar No': item.aadhar_no || '-',
             'APCOS ID': item.apcos_id || '-',
             'Remarks': item.remarks || '-'
@@ -3153,7 +3153,7 @@ async function exportAdminStaffingPDF() {
             item.status,
             item.employee_name || '-',
             item.employment_type || '-',
-            item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+            formatDateDMY(item.joining_date),
             item.aadhar_no || '-',
             item.apcos_id || '-',
             item.remarks || '-'

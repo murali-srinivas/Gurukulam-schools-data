@@ -883,7 +883,7 @@ async function generateSchoolReportPreview() {
         let statusHtml = '<span class="badge badge-fail">Vacant</span>';
         if (item.status === 'Filled') statusHtml = '<span class="badge badge-pass">Filled</span>';
         else if (item.status === 'Not Sanctioned') statusHtml = '<span class="badge badge-warning">Not Sanctioned</span>';
-        const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
+        const formattedDate = formatDateDMY(item.joining_date);
         html += `
           <tr>
             <td>${index + 1}</td>
@@ -934,7 +934,7 @@ async function exportExcel() {
         'Status': item.status,
         'Name of the Employee': item.employee_name || '-',
         'Employment Type': item.employment_type || '-',
-        'Date of Joining': item.joining_date || '-',
+        'Date of Joining': formatDateDMY(item.joining_date),
         'Aadhar No': item.aadhar_no || '-',
         'APCOS ID': item.apcos_id || '-',
         'Remarks': item.remarks || '-'
@@ -1173,7 +1173,7 @@ async function exportPDF() {
         item.status,
         item.employee_name || '-',
         item.employment_type || '-',
-        item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-',
+        formatDateDMY(item.joining_date),
         item.aadhar_no || '-',
         item.apcos_id || '-',
         item.remarks || '-'
@@ -1937,7 +1937,7 @@ function renderStaffingTable() {
     else if (item.status === 'Not Sanctioned') badgeClass = 'badge-warning';
     const statusHtml = `<span class="badge ${badgeClass}">${item.status}</span>`;
     
-    const formattedDate = item.joining_date ? new Date(item.joining_date).toLocaleDateString() : '-';
+    const formattedDate = formatDateDMY(item.joining_date);
     
     tr.innerHTML = `
       <td>${index + 1}</td>
