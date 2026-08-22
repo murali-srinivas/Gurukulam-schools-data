@@ -1441,12 +1441,33 @@ async function exportAdminExcel() {
                 };
             });
             
+            // Query all staffing particulars to check which schools have at least one entry
+            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
+            if (allStaffingError) throw allStaffingError;
+            
+            const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
+            const pendingSchools = allSchools.filter(school => {
+                if (filterDistrict && school.district !== filterDistrict) return false;
+                if (schoolId && school.id !== schoolId) return false;
+                return !schoolsWithEntries.has(school.id);
+            });
+
+            const pendingData = pendingSchools.map((ps, idx) => ({
+                'S.No': idx + 1,
+                'School Name': ps.school_name,
+                'District': ps.district || '-'
+            }));
+
             const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const pendingWorksheet = XLSX.utils.json_to_sheet(pendingData);
+            
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Staffing Particulars");
+            XLSX.utils.book_append_sheet(workbook, pendingWorksheet, "Pending Schools (0 Entries)");
+            
             const fileName = `Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
-            showToast('Staffing particulars Excel export successful', 'success');
+            showToast('Staffing particulars & Pending Schools Excel export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -1844,10 +1865,43 @@ async function exportAdminPDF() {
                 head: head,
                 body: body,
                 startY: 28,
+                styles: { fontSize: 7 }
+            });
+
+            // Query all staffing particulars to check which schools have at least one entry
+            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
+            if (allStaffingError) throw allStaffingError;
+            
+            const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
+            const pendingSchools = allSchools.filter(school => {
+                if (filterDistrict && school.district !== filterDistrict) return false;
+                if (schoolId && school.id !== schoolId) return false;
+                return !schoolsWithEntries.has(school.id);
+            });
+
+            // Append pending schools to PDF
+            doc.addPage();
+            doc.setFontSize(12);
+            doc.text(`Schools with Zero Staffing Particulars Submissions (${pendingSchools.length})`, 14, 22);
+            doc.setFontSize(8);
+            doc.text("The following schools have not submitted any staffing particulars entries yet:", 14, 28);
+            
+            const pendingHead = [['S.No', 'School Name', 'District']];
+            const pendingBody = pendingSchools.map((ps, idx) => [
+                idx + 1,
+                ps.school_name,
+                ps.district || '-'
+            ]);
+
+            doc.autoTable({
+                head: pendingHead,
+                body: pendingBody,
+                startY: 32,
                 styles: { fontSize: 8 }
             });
+
             doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-            showToast('Staffing particulars PDF export successful', 'success');
+            showToast('Staffing particulars & Pending Schools PDF export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -2239,13 +2293,46 @@ async function generateReport() {
                 });
             }
             
+            // Query all staffing particulars to check which schools have at least one entry
+            const { data: allStaffing, error: allStaffingError } = await supabase.from('staffing_particulars').select('school_id');
+            if (allStaffingError) throw allStaffingError;
+            
+            const schoolsWithEntries = new Set(allStaffing.map(item => item.school_id));
+            const pendingSchools = allSchools.filter(school => {
+                if (filterDistrict && school.district !== filterDistrict) return false;
+                if (schoolId && school.id !== schoolId) return false;
+                return !schoolsWithEntries.has(school.id);
+            });
+
+            let html = `
+                <div class="card mb-4" style="border-left: 4px solid #ef4444; background-color: #fff;">
+                    <div class="card-body" style="padding: 16px;">
+                        <h4 style="color: #b91c1c; margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-circle"></i> Schools with Zero Staffing Particulars Submissions (${pendingSchools.length})
+                        </h4>
+                        ${pendingSchools.length > 0 ? `
+                            <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: #4b5563;">The following schools have not submitted any staffing particulars entries yet:</p>
+                            <div style="max-height: 200px; overflow-y: auto; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px;">
+                                <ul style="margin: 0; padding: 0 0 0 16px; font-size: 0.9rem; line-height: 1.5; color: #1f2937;">
+                                    ${pendingSchools.map(ps => `<li><strong>${ps.school_name}</strong> (${ps.district || 'No District'})</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : `
+                            <p style="margin: 0; font-size: 0.9rem; color: #047857; font-weight: 500;">
+                                <i class="fas fa-check-circle"></i> Excellent! All schools in the selected criteria have submitted at least one staffing particulars entry.
+                            </p>
+                        `}
+                    </div>
+                </div>
+            `;
+
             if (filteredList.length === 0) {
-                previewContainer.innerHTML = '<div class="text-center p-4">No staffing records found.</div>';
+                previewContainer.innerHTML = html + '<div class="text-center p-4">No staffing records found for the selected filter criteria.</div>';
                 hideLoading();
                 return;
             }
             
-            let html = `
+            html += `
                 <div class="table-container mt-4">
                     <table>
                         <thead>
