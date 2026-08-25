@@ -2597,6 +2597,8 @@ async function generateReport() {
                 `;
             });
             
+            html += `</tbody></table></div>`;
+            previewContainer.innerHTML = html;
         } else if (type === 'mblp_grades') {
             const subjectVal = document.getElementById('report-filter-subject') ? document.getElementById('report-filter-subject').value : '';
             let mblpQuery = supabase.from('mblp_grades').select('*');
