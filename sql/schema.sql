@@ -302,14 +302,16 @@ ON CONFLICT (username) DO NOTHING;
 -- MIGRATION: Create mblp_grades table
 -- Run this in Supabase SQL editor:
 -- ============================================
+-- DROP TABLE IF EXISTS mblp_grades;
 -- CREATE TABLE IF NOT EXISTS mblp_grades (
 --     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --     school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
 --     class_number VARCHAR(10) NOT NULL, -- '3', '4', '5', '6', '7', '8', '9'
---     grade VARCHAR(2) NOT NULL, -- 'A', 'B', 'C'
---     student_count INTEGER NOT NULL CHECK (student_count >= 0),
+--     grade_a_count INTEGER NOT NULL DEFAULT 0 CHECK (grade_a_count >= 0),
+--     grade_b_count INTEGER NOT NULL DEFAULT 0 CHECK (grade_b_count >= 0),
+--     grade_c_count INTEGER NOT NULL DEFAULT 0 CHECK (grade_c_count >= 0),
 --     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
---     UNIQUE(school_id, class_number, grade)
+--     UNIQUE(school_id, class_number)
 -- );
 --
 -- ALTER TABLE mblp_grades ENABLE ROW LEVEL SECURITY;

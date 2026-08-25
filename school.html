@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=8.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -378,8 +378,9 @@
                 <tr>
                   <th>S.No</th>
                   <th>Class</th>
-                  <th>Grade</th>
-                  <th>No of Students</th>
+                  <th>Grade A (No. of Students)</th>
+                  <th>Grade B (No. of Students)</th>
+                  <th>Grade C (No. of Students)</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -419,17 +420,16 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Grade</label>
-          <select class="form-select" id="mblp-grade" required>
-            <option value="">Select Grade</option>
-            <option value="A">A</option>
-            <option value="B">B</option>
-            <option value="C">C</option>
-          </select>
+          <label class="form-label">Grade A (No. of Students)</label>
+          <input type="number" class="form-input" id="mblp-grade-a" placeholder="Enter students with Grade A" required min="0" step="1">
         </div>
         <div class="form-group">
-          <label class="form-label">No of Students</label>
-          <input type="number" class="form-input" id="mblp-student-count" placeholder="Enter number of students" required min="0" step="1">
+          <label class="form-label">Grade B (No. of Students)</label>
+          <input type="number" class="form-input" id="mblp-grade-b" placeholder="Enter students with Grade B" required min="0" step="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grade C (No. of Students)</label>
+          <input type="number" class="form-input" id="mblp-grade-c" placeholder="Enter students with Grade C" required min="0" step="1">
         </div>
       </form>
     </div>
@@ -880,8 +880,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=8.0"></script>
-<script src="js/auth.js?v=8.0"></script>
-<script src="js/school.js?v=8.0"></script>
+<script src="js/supabase-config.js?v=8.1"></script>
+<script src="js/auth.js?v=8.1"></script>
+<script src="js/school.js?v=8.1"></script>
 </body>
 </html>

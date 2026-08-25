@@ -1055,6 +1055,13 @@ function onAdminReportTypeChange() {
         sectionSelect.disabled = true;
         examSelect.value = '';
         examSelect.disabled = true;
+    } else if (type === 'mblp_grades') {
+        schoolSelect.disabled = false;
+        classSelect.disabled = false;
+        sectionSelect.value = '';
+        sectionSelect.disabled = true;
+        examSelect.value = '';
+        examSelect.disabled = true;
     } else if (type === 'schools') {
         schoolSelect.value = '';
         schoolSelect.disabled = true;
@@ -1064,6 +1071,27 @@ function onAdminReportTypeChange() {
         sectionSelect.disabled = true;
         examSelect.value = '';
         examSelect.disabled = true;
+    }
+
+    // Dynmically update class choices based on type
+    if (type === 'mblp_grades') {
+        classSelect.innerHTML = '<option value="">All Classes</option>';
+        for (let c = 3; c <= 9; c++) {
+            const opt = document.createElement('option');
+            opt.value = String(c);
+            opt.textContent = `Class ${c}`;
+            classSelect.appendChild(opt);
+        }
+    } else {
+        if (classSelect.children.length < 10) {
+            classSelect.innerHTML = '<option value="">All Classes</option>';
+            CLASSES.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = `Class ${c}`;
+                classSelect.appendChild(opt);
+            });
+        }
     }
     const districtGrp = document.getElementById('report-filter-district-group');
     const postGrp = document.getElementById('report-filter-post-group');
@@ -1495,6 +1523,58 @@ async function exportAdminExcel() {
             const fileName = `Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
             showToast('Staffing particulars & Pending Schools Excel export successful', 'success');
+        } else if (type === 'mblp_grades') {
+            let mblpQuery = supabase.from('mblp_grades').select('*');
+            if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
+            if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+            while (keepFetching) {
+                let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
+                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(data);
+                    if (data.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
+            
+            if (list.length === 0) {
+                showToast('No MBLP Grade records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const reportData = list.map((item, index) => {
+                const school = allSchools.find(s => s.id === item.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
+                return {
+                    'S.No': index + 1,
+                    'School Name': schoolName,
+                    'District': dist,
+                    'Class': `Class ${item.class_number}`,
+                    'Grade A (No. of Students)': item.grade_a_count,
+                    'Grade B (No. of Students)': item.grade_b_count,
+                    'Grade C (No. of Students)': item.grade_c_count
+                };
+            });
+            
+            const worksheet = XLSX.utils.json_to_sheet(reportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "MBLP Grades");
+            const fileName = `MBLP_Grades_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast('MBLP Grades Excel export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -1948,6 +2028,63 @@ async function exportAdminPDF() {
 
             doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Staffing particulars & Pending Schools PDF export successful', 'success');
+        } else if (type === 'mblp_grades') {
+            let mblpQuery = supabase.from('mblp_grades').select('*');
+            if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
+            if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+            while (keepFetching) {
+                let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
+                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(data);
+                    if (data.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
+            
+            if (list.length === 0) {
+                showToast('No MBLP Grade records found for export', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            const head = [['S.No', 'School Name', 'District', 'Class', 'Grade A', 'Grade B', 'Grade C']];
+            const body = list.map((item, index) => {
+                const school = allSchools.find(s => s.id === item.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
+                return [
+                    index + 1,
+                    schoolName,
+                    dist,
+                    `Class ${item.class_number}`,
+                    item.grade_a_count,
+                    item.grade_b_count,
+                    item.grade_c_count
+                ];
+            });
+            
+            doc.text('MBLP Grades Report', 14, 22);
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 28,
+                styles: { fontSize: 8 }
+            });
+            
+            doc.save(`MBLP_Grades_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('MBLP Grades PDF export successful', 'success');
         } else if (type === 'schools') {
             if (!allSchools || allSchools.length === 0) {
                 showToast('No schools found for export', 'warning');
@@ -2437,6 +2574,70 @@ async function generateReport() {
                         <td>${s.aadhar_no || '-'}</td>
                         <td>${s.apcos_id || '-'}</td>
                         <td>${s.remarks || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+        } else if (type === 'mblp_grades') {
+            let mblpQuery = supabase.from('mblp_grades').select('*');
+            if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
+            if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            
+            let list = [];
+            let offset = 0;
+            const batchSize = 1000;
+            let keepFetching = true;
+            while (keepFetching) {
+                let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
+                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    keepFetching = false;
+                } else {
+                    list = list.concat(data);
+                    if (data.length < batchSize) {
+                        keepFetching = false;
+                    } else {
+                        offset += batchSize;
+                    }
+                }
+            }
+            
+            if (list.length === 0) {
+                previewContainer.innerHTML = '<div class="text-center p-4">No MBLP Grade records found.</div>';
+                hideLoading();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container mt-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>School Name</th>
+                                <th>District</th>
+                                <th>Class</th>
+                                <th>Grade A (No. of Students)</th>
+                                <th>Grade B (No. of Students)</th>
+                                <th>Grade C (No. of Students)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            list.forEach(item => {
+                const school = allSchools.find(s => s.id === item.school_id);
+                const schoolName = school ? school.school_name : 'Unknown';
+                const dist = school ? school.district || '-' : '-';
+                
+                html += `
+                    <tr>
+                        <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+                        <td style="font-weight: 500; color: #3b82f6;">${dist}</td>
+                        <td>Class ${item.class_number}</td>
+                        <td style="font-weight: 600; color: #1e3a8a;">${item.grade_a_count}</td>
+                        <td style="font-weight: 600; color: #15803d;">${item.grade_b_count}</td>
+                        <td style="font-weight: 600; color: #b45309;">${item.grade_c_count}</td>
                     </tr>
                 `;
             });
@@ -3696,7 +3897,7 @@ async function loadAdminMblpGradesTable() {
         
         while (keepFetching) {
             let pagedQuery = query.limit(batchSize).offset(offset);
-            const { data, error } = await pagedQuery.order('class_number', { ascending: true }).order('grade', { ascending: true });
+            const { data, error } = await pagedQuery.order('class_number', { ascending: true });
             if (error) throw error;
             
             if (!data || data.length === 0) {
@@ -3732,7 +3933,7 @@ function renderAdminMblpGradesTable() {
     });
     
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
         return;
     }
     
@@ -3747,12 +3948,13 @@ function renderAdminMblpGradesTable() {
             <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
             <td>${district}</td>
             <td>Class ${item.class_number}</td>
-            <td>Grade ${item.grade}</td>
-            <td style="font-weight: 600; color: #15803d;">${item.student_count}</td>
+            <td style="font-weight: 600; color: #1e3a8a;">${item.grade_a_count}</td>
+            <td style="font-weight: 600; color: #15803d;">${item.grade_b_count}</td>
+            <td style="font-weight: 600; color: #b45309;">${item.grade_c_count}</td>
             <td>
                 <div class="table-actions">
                     <button class="btn btn-sm btn-outline" onclick="openAdminMblpModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteAdminMblpGrade('${item.id}', '${schoolName.replace(/'/g, "\\'")}', '${item.class_number}', '${item.grade}')"><i class="fas fa-trash"></i> Delete</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminMblpGrade('${item.id}', '${schoolName.replace(/'/g, "\\'")}', '${item.class_number}')"><i class="fas fa-trash"></i> Delete</button>
                 </div>
             </td>
         `;
@@ -3798,7 +4000,6 @@ function openAdminMblpModal(id = null) {
     document.getElementById('admin-mblp-edit-id').value = '';
     document.getElementById('admin-mblp-school').disabled = false;
     document.getElementById('admin-mblp-class').disabled = false;
-    document.getElementById('admin-mblp-grade').disabled = false;
     
     if (id) {
         title.textContent = 'Edit MBLP Grade Entry';
@@ -3807,12 +4008,12 @@ function openAdminMblpModal(id = null) {
             document.getElementById('admin-mblp-edit-id').value = item.id;
             document.getElementById('admin-mblp-school').value = item.school_id;
             document.getElementById('admin-mblp-class').value = item.class_number;
-            document.getElementById('admin-mblp-grade').value = item.grade;
-            document.getElementById('admin-mblp-student-count').value = item.student_count;
+            document.getElementById('admin-mblp-grade-a').value = item.grade_a_count;
+            document.getElementById('admin-mblp-grade-b').value = item.grade_b_count;
+            document.getElementById('admin-mblp-grade-c').value = item.grade_c_count;
             
             document.getElementById('admin-mblp-school').disabled = true;
             document.getElementById('admin-mblp-class').disabled = true;
-            document.getElementById('admin-mblp-grade').disabled = true;
         }
     } else {
         title.textContent = 'Add MBLP Grade Entry';
@@ -3831,10 +4032,11 @@ async function saveAdminMblpGrade(event) {
     const id = document.getElementById('admin-mblp-edit-id').value;
     const schoolId = document.getElementById('admin-mblp-school').value;
     const classVal = document.getElementById('admin-mblp-class').value;
-    const gradeVal = document.getElementById('admin-mblp-grade').value;
-    const studentCount = parseInt(document.getElementById('admin-mblp-student-count').value);
+    const gradeA = parseInt(document.getElementById('admin-mblp-grade-a').value);
+    const gradeB = parseInt(document.getElementById('admin-mblp-grade-b').value);
+    const gradeC = parseInt(document.getElementById('admin-mblp-grade-c').value);
     
-    if (!schoolId || !classVal || !gradeVal || isNaN(studentCount) || studentCount < 0) {
+    if (!schoolId || !classVal || isNaN(gradeA) || gradeA < 0 || isNaN(gradeB) || gradeB < 0 || isNaN(gradeC) || gradeC < 0) {
         showToast('Please fill all required fields correctly', 'warning');
         return;
     }
@@ -3842,8 +4044,9 @@ async function saveAdminMblpGrade(event) {
     const payload = {
         school_id: schoolId,
         class_number: classVal,
-        grade: gradeVal,
-        student_count: studentCount
+        grade_a_count: gradeA,
+        grade_b_count: gradeB,
+        grade_c_count: gradeC
     };
     
     showLoading();
@@ -3851,14 +4054,18 @@ async function saveAdminMblpGrade(event) {
         if (id) {
             const { error } = await supabase
                 .from('mblp_grades')
-                .update({ student_count: studentCount })
+                .update({
+                    grade_a_count: gradeA,
+                    grade_b_count: gradeB,
+                    grade_c_count: gradeC
+                })
                 .eq('id', id);
             if (error) throw error;
             showToast('MBLP Grade entry updated successfully', 'success');
         } else {
-            const duplicate = adminMblpGradesData.find(x => x.school_id === schoolId && x.class_number === classVal && x.grade === gradeVal);
+            const duplicate = adminMblpGradesData.find(x => x.school_id === schoolId && x.class_number === classVal);
             if (duplicate) {
-                throw new Error(`An entry for this school, Class ${classVal} and Grade ${gradeVal} already exists. Please edit that entry instead.`);
+                throw new Error(`An entry for this school and Class ${classVal} already exists. Please edit that entry instead.`);
             }
 
             const { error } = await supabase
@@ -3877,8 +4084,8 @@ async function saveAdminMblpGrade(event) {
     }
 }
 
-async function deleteAdminMblpGrade(id, schoolName, classNum, grade) {
-    if (!confirm(`Are you sure you want to delete MBLP Grade entry for ${schoolName} (Class ${classNum} - Grade ${grade})?`)) return;
+async function deleteAdminMblpGrade(id, schoolName, classNum) {
+    if (!confirm(`Are you sure you want to delete MBLP Grade entry for ${schoolName} (Class ${classNum})?`)) return;
     
     showLoading();
     try {
