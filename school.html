@@ -370,6 +370,15 @@
                 <option value="9">Class 9</option>
               </select>
             </div>
+            <div class="filter-group" style="max-width: 200px;">
+              <label>Filter by Subject</label>
+              <select id="mblp-filter-subject" class="form-select" onchange="renderMblpGradesTable()">
+                <option value="">All Subjects</option>
+                <option value="Telugu">Telugu</option>
+                <option value="English">English</option>
+                <option value="Maths">Maths</option>
+              </select>
+            </div>
           </div>
 
           <div class="table-container standalone">
@@ -378,6 +387,7 @@
                 <tr>
                   <th>S.No</th>
                   <th>Class</th>
+                  <th>Subject</th>
                   <th>Grade A (No. of Students)</th>
                   <th>Grade B (No. of Students)</th>
                   <th>Grade C (No. of Students)</th>
@@ -417,6 +427,15 @@
             <option value="7">Class 7</option>
             <option value="8">Class 8</option>
             <option value="9">Class 9</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select class="form-select" id="mblp-subject" required>
+            <option value="">Select Subject</option>
+            <option value="Telugu">Telugu</option>
+            <option value="English">English</option>
+            <option value="Maths">Maths</option>
           </select>
         </div>
         <div class="form-group">

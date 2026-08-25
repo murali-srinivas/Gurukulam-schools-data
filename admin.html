@@ -276,6 +276,15 @@
               <label>Exam</label>
               <select id="report-filter-exam"><option value="">All Exams</option><option value="FA1">FA1</option><option value="FA2">FA2</option><option value="FA3">FA3</option><option value="FA4">FA4</option><option value="SA1">SA1</option><option value="SA2">SA2</option></select>
             </div>
+            <div class="filter-group" id="report-filter-subject-group" style="display: none;">
+              <label>Subject</label>
+              <select id="report-filter-subject">
+                <option value="">All Subjects</option>
+                <option value="Telugu">Telugu</option>
+                <option value="English">English</option>
+                <option value="Maths">Maths</option>
+              </select>
+            </div>
             <div class="filter-group" id="report-filter-district-group" style="display: none;">
               <label>District</label>
               <select id="report-filter-district">
@@ -549,6 +558,15 @@
                 <option value="9">Class 9</option>
               </select>
             </div>
+            <div class="filter-group" style="max-width: 150px;">
+              <label>Filter by Subject</label>
+              <select id="admin-mblp-filter-subject" class="form-select" onchange="renderAdminMblpGradesTable()">
+                <option value="">All Subjects</option>
+                <option value="Telugu">Telugu</option>
+                <option value="English">English</option>
+                <option value="Maths">Maths</option>
+              </select>
+            </div>
           </div>
 
           <div class="table-container standalone">
@@ -559,6 +577,7 @@
                   <th>School Name</th>
                   <th>District</th>
                   <th>Class</th>
+                  <th>Subject</th>
                   <th>Grade A (No. of Students)</th>
                   <th>Grade B (No. of Students)</th>
                   <th>Grade C (No. of Students)</th>
@@ -605,6 +624,15 @@
             <option value="7">Class 7</option>
             <option value="8">Class 8</option>
             <option value="9">Class 9</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select class="form-select" id="admin-mblp-subject" required>
+            <option value="">Select Subject</option>
+            <option value="Telugu">Telugu</option>
+            <option value="English">English</option>
+            <option value="Maths">Maths</option>
           </select>
         </div>
         <div class="form-group">

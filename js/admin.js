@@ -1097,11 +1097,20 @@ function onAdminReportTypeChange() {
     const postGrp = document.getElementById('report-filter-post-group');
     const statusGrp = document.getElementById('report-filter-status-group');
     const empTypeGrp = document.getElementById('report-filter-emptype-group');
+    const subjectGrp = document.getElementById('report-filter-subject-group');
     
     const districtSelect = document.getElementById('report-filter-district');
     const postSelect = document.getElementById('report-filter-post');
     const statusSelect = document.getElementById('report-filter-status');
     const empTypeSelect = document.getElementById('report-filter-emptype');
+    const subjectSelect = document.getElementById('report-filter-subject');
+
+    if (type === 'mblp_grades') {
+        if (subjectGrp) subjectGrp.style.display = 'block';
+    } else {
+        if (subjectGrp) subjectGrp.style.display = 'none';
+        if (subjectSelect) subjectSelect.value = '';
+    }
 
     if (type === 'staffing_particulars') {
         if (districtGrp) districtGrp.style.display = 'block';
@@ -1524,9 +1533,11 @@ async function exportAdminExcel() {
             XLSX.writeFile(workbook, fileName);
             showToast('Staffing particulars & Pending Schools Excel export successful', 'success');
         } else if (type === 'mblp_grades') {
+            const subjectVal = document.getElementById('report-filter-subject') ? document.getElementById('report-filter-subject').value : '';
             let mblpQuery = supabase.from('mblp_grades').select('*');
             if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
             if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            if (subjectVal) mblpQuery = mblpQuery.eq('subject', subjectVal);
             
             let list = [];
             let offset = 0;
@@ -1534,7 +1545,9 @@ async function exportAdminExcel() {
             let keepFetching = true;
             while (keepFetching) {
                 let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
-                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                const { data, error } = await pagedQuery
+                    .order('class_number', { ascending: true })
+                    .order('subject', { ascending: true });
                 if (error) throw error;
                 if (!data || data.length === 0) {
                     keepFetching = false;
@@ -1563,6 +1576,7 @@ async function exportAdminExcel() {
                     'School Name': schoolName,
                     'District': dist,
                     'Class': `Class ${item.class_number}`,
+                    'Subject': item.subject,
                     'Grade A (No. of Students)': item.grade_a_count,
                     'Grade B (No. of Students)': item.grade_b_count,
                     'Grade C (No. of Students)': item.grade_c_count
@@ -2029,9 +2043,11 @@ async function exportAdminPDF() {
             doc.save(`Staffing_Particulars_Report_${new Date().toISOString().split('T')[0]}.pdf`);
             showToast('Staffing particulars & Pending Schools PDF export successful', 'success');
         } else if (type === 'mblp_grades') {
+            const subjectVal = document.getElementById('report-filter-subject') ? document.getElementById('report-filter-subject').value : '';
             let mblpQuery = supabase.from('mblp_grades').select('*');
             if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
             if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            if (subjectVal) mblpQuery = mblpQuery.eq('subject', subjectVal);
             
             let list = [];
             let offset = 0;
@@ -2039,7 +2055,9 @@ async function exportAdminPDF() {
             let keepFetching = true;
             while (keepFetching) {
                 let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
-                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                const { data, error } = await pagedQuery
+                    .order('class_number', { ascending: true })
+                    .order('subject', { ascending: true });
                 if (error) throw error;
                 if (!data || data.length === 0) {
                     keepFetching = false;
@@ -2059,7 +2077,7 @@ async function exportAdminPDF() {
                 return;
             }
             
-            const head = [['S.No', 'School Name', 'District', 'Class', 'Grade A', 'Grade B', 'Grade C']];
+            const head = [['S.No', 'School Name', 'District', 'Class', 'Subject', 'Grade A', 'Grade B', 'Grade C']];
             const body = list.map((item, index) => {
                 const school = allSchools.find(s => s.id === item.school_id);
                 const schoolName = school ? school.school_name : 'Unknown';
@@ -2069,6 +2087,7 @@ async function exportAdminPDF() {
                     schoolName,
                     dist,
                     `Class ${item.class_number}`,
+                    item.subject,
                     item.grade_a_count,
                     item.grade_b_count,
                     item.grade_c_count
@@ -2579,9 +2598,11 @@ async function generateReport() {
             });
             
         } else if (type === 'mblp_grades') {
+            const subjectVal = document.getElementById('report-filter-subject') ? document.getElementById('report-filter-subject').value : '';
             let mblpQuery = supabase.from('mblp_grades').select('*');
             if (schoolId) mblpQuery = mblpQuery.eq('school_id', schoolId);
             if (classVal) mblpQuery = mblpQuery.eq('class_number', classVal);
+            if (subjectVal) mblpQuery = mblpQuery.eq('subject', subjectVal);
             
             let list = [];
             let offset = 0;
@@ -2589,7 +2610,9 @@ async function generateReport() {
             let keepFetching = true;
             while (keepFetching) {
                 let pagedQuery = mblpQuery.limit(batchSize).offset(offset);
-                const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+                const { data, error } = await pagedQuery
+                    .order('class_number', { ascending: true })
+                    .order('subject', { ascending: true });
                 if (error) throw error;
                 if (!data || data.length === 0) {
                     keepFetching = false;
@@ -2617,6 +2640,7 @@ async function generateReport() {
                                 <th>School Name</th>
                                 <th>District</th>
                                 <th>Class</th>
+                                <th>Subject</th>
                                 <th>Grade A (No. of Students)</th>
                                 <th>Grade B (No. of Students)</th>
                                 <th>Grade C (No. of Students)</th>
@@ -2635,6 +2659,7 @@ async function generateReport() {
                         <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
                         <td style="font-weight: 500; color: #3b82f6;">${dist}</td>
                         <td>Class ${item.class_number}</td>
+                        <td style="font-weight: 500; color: #475569;">${item.subject}</td>
                         <td style="font-weight: 600; color: #1e3a8a;">${item.grade_a_count}</td>
                         <td style="font-weight: 600; color: #15803d;">${item.grade_b_count}</td>
                         <td style="font-weight: 600; color: #b45309;">${item.grade_c_count}</td>
@@ -3897,7 +3922,9 @@ async function loadAdminMblpGradesTable() {
         
         while (keepFetching) {
             let pagedQuery = query.limit(batchSize).offset(offset);
-            const { data, error } = await pagedQuery.order('class_number', { ascending: true });
+            const { data, error } = await pagedQuery
+                .order('class_number', { ascending: true })
+                .order('subject', { ascending: true });
             if (error) throw error;
             
             if (!data || data.length === 0) {
@@ -3927,13 +3954,16 @@ function renderAdminMblpGradesTable() {
     tbody.innerHTML = '';
     
     const filterClass = document.getElementById('admin-mblp-filter-class').value;
+    const filterSubject = document.getElementById('admin-mblp-filter-subject').value;
     
     const filtered = adminMblpGradesData.filter(item => {
-        return !filterClass || item.class_number === filterClass;
+        const matchesClass = !filterClass || item.class_number === filterClass;
+        const matchesSubject = !filterSubject || item.subject === filterSubject;
+        return matchesClass && matchesSubject;
     });
     
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
         return;
     }
     
@@ -3948,13 +3978,14 @@ function renderAdminMblpGradesTable() {
             <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
             <td>${district}</td>
             <td>Class ${item.class_number}</td>
+            <td style="font-weight: 500; color: #475569;">${item.subject}</td>
             <td style="font-weight: 600; color: #1e3a8a;">${item.grade_a_count}</td>
             <td style="font-weight: 600; color: #15803d;">${item.grade_b_count}</td>
             <td style="font-weight: 600; color: #b45309;">${item.grade_c_count}</td>
             <td>
                 <div class="table-actions">
                     <button class="btn btn-sm btn-outline" onclick="openAdminMblpModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteAdminMblpGrade('${item.id}', '${schoolName.replace(/'/g, "\\'")}', '${item.class_number}')"><i class="fas fa-trash"></i> Delete</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminMblpGrade('${item.id}', '${schoolName.replace(/'/g, "\\'")}', '${item.class_number}', '${item.subject}')"><i class="fas fa-trash"></i> Delete</button>
                 </div>
             </td>
         `;
@@ -4000,6 +4031,7 @@ function openAdminMblpModal(id = null) {
     document.getElementById('admin-mblp-edit-id').value = '';
     document.getElementById('admin-mblp-school').disabled = false;
     document.getElementById('admin-mblp-class').disabled = false;
+    document.getElementById('admin-mblp-subject').disabled = false;
     
     if (id) {
         title.textContent = 'Edit MBLP Grade Entry';
@@ -4008,12 +4040,14 @@ function openAdminMblpModal(id = null) {
             document.getElementById('admin-mblp-edit-id').value = item.id;
             document.getElementById('admin-mblp-school').value = item.school_id;
             document.getElementById('admin-mblp-class').value = item.class_number;
+            document.getElementById('admin-mblp-subject').value = item.subject;
             document.getElementById('admin-mblp-grade-a').value = item.grade_a_count;
             document.getElementById('admin-mblp-grade-b').value = item.grade_b_count;
             document.getElementById('admin-mblp-grade-c').value = item.grade_c_count;
             
             document.getElementById('admin-mblp-school').disabled = true;
             document.getElementById('admin-mblp-class').disabled = true;
+            document.getElementById('admin-mblp-subject').disabled = true;
         }
     } else {
         title.textContent = 'Add MBLP Grade Entry';
@@ -4032,11 +4066,12 @@ async function saveAdminMblpGrade(event) {
     const id = document.getElementById('admin-mblp-edit-id').value;
     const schoolId = document.getElementById('admin-mblp-school').value;
     const classVal = document.getElementById('admin-mblp-class').value;
+    const subjectVal = document.getElementById('admin-mblp-subject').value;
     const gradeA = parseInt(document.getElementById('admin-mblp-grade-a').value);
     const gradeB = parseInt(document.getElementById('admin-mblp-grade-b').value);
     const gradeC = parseInt(document.getElementById('admin-mblp-grade-c').value);
     
-    if (!schoolId || !classVal || isNaN(gradeA) || gradeA < 0 || isNaN(gradeB) || gradeB < 0 || isNaN(gradeC) || gradeC < 0) {
+    if (!schoolId || !classVal || !subjectVal || isNaN(gradeA) || gradeA < 0 || isNaN(gradeB) || gradeB < 0 || isNaN(gradeC) || gradeC < 0) {
         showToast('Please fill all required fields correctly', 'warning');
         return;
     }
@@ -4044,6 +4079,7 @@ async function saveAdminMblpGrade(event) {
     const payload = {
         school_id: schoolId,
         class_number: classVal,
+        subject: subjectVal,
         grade_a_count: gradeA,
         grade_b_count: gradeB,
         grade_c_count: gradeC
@@ -4063,9 +4099,9 @@ async function saveAdminMblpGrade(event) {
             if (error) throw error;
             showToast('MBLP Grade entry updated successfully', 'success');
         } else {
-            const duplicate = adminMblpGradesData.find(x => x.school_id === schoolId && x.class_number === classVal);
+            const duplicate = adminMblpGradesData.find(x => x.school_id === schoolId && x.class_number === classVal && x.subject === subjectVal);
             if (duplicate) {
-                throw new Error(`An entry for this school and Class ${classVal} already exists. Please edit that entry instead.`);
+                throw new Error(`An entry for this school, Class ${classVal} (${subjectVal}) already exists. Please edit that entry instead.`);
             }
 
             const { error } = await supabase
@@ -4084,8 +4120,8 @@ async function saveAdminMblpGrade(event) {
     }
 }
 
-async function deleteAdminMblpGrade(id, schoolName, classNum) {
-    if (!confirm(`Are you sure you want to delete MBLP Grade entry for ${schoolName} (Class ${classNum})?`)) return;
+async function deleteAdminMblpGrade(id, schoolName, classNum, subject) {
+    if (!confirm(`Are you sure you want to delete MBLP Grade entry for ${schoolName} (Class ${classNum} - ${subject})?`)) return;
     
     showLoading();
     try {

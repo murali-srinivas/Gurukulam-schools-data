@@ -2401,7 +2401,8 @@ async function loadMblpGradesTable() {
       .from('mblp_grades')
       .select('*')
       .eq('school_id', currentSchool.id)
-      .order('class_number', { ascending: true });
+      .order('class_number', { ascending: true })
+      .order('subject', { ascending: true });
     
     if (error) throw error;
     schoolMblpGradesData = data || [];
@@ -2419,13 +2420,16 @@ function renderMblpGradesTable() {
   tbody.innerHTML = '';
   
   const filterClass = document.getElementById('mblp-filter-class').value;
+  const filterSubject = document.getElementById('mblp-filter-subject').value;
   
   const filtered = schoolMblpGradesData.filter(item => {
-    return !filterClass || item.class_number === filterClass;
+    const matchesClass = !filterClass || item.class_number === filterClass;
+    const matchesSubject = !filterSubject || item.subject === filterSubject;
+    return matchesClass && matchesSubject;
   });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
     return;
   }
   
@@ -2434,13 +2438,14 @@ function renderMblpGradesTable() {
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td style="font-weight: 500;">Class ${item.class_number}</td>
+      <td style="font-weight: 500; color: #475569;">${item.subject}</td>
       <td style="font-weight: 600; color: #1e3a8a;">${item.grade_a_count}</td>
       <td style="font-weight: 600; color: #15803d;">${item.grade_b_count}</td>
       <td style="font-weight: 600; color: #b45309;">${item.grade_c_count}</td>
       <td>
         <div class="table-actions">
           <button class="btn btn-sm btn-outline" onclick="openMblpGradesModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteMblpGrade('${item.id}', '${item.class_number}')"><i class="fas fa-trash"></i> Delete</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMblpGrade('${item.id}', '${item.class_number}', '${item.subject}')"><i class="fas fa-trash"></i> Delete</button>
         </div>
       </td>
     `;
@@ -2456,6 +2461,7 @@ function openMblpGradesModal(id = null) {
   form.reset();
   document.getElementById('mblp-edit-id').value = '';
   document.getElementById('mblp-class').disabled = false;
+  document.getElementById('mblp-subject').disabled = false;
   
   if (id) {
     title.textContent = 'Edit MBLP Grade Entry';
@@ -2463,11 +2469,13 @@ function openMblpGradesModal(id = null) {
     if (item) {
       document.getElementById('mblp-edit-id').value = item.id;
       document.getElementById('mblp-class').value = item.class_number;
+      document.getElementById('mblp-subject').value = item.subject;
       document.getElementById('mblp-grade-a').value = item.grade_a_count;
       document.getElementById('mblp-grade-b').value = item.grade_b_count;
       document.getElementById('mblp-grade-c').value = item.grade_c_count;
       
       document.getElementById('mblp-class').disabled = true;
+      document.getElementById('mblp-subject').disabled = true;
     }
   } else {
     title.textContent = 'Add MBLP Grade Entry';
@@ -2485,11 +2493,12 @@ async function saveMblpGrade(event) {
   
   const id = document.getElementById('mblp-edit-id').value;
   const classVal = document.getElementById('mblp-class').value;
+  const subjectVal = document.getElementById('mblp-subject').value;
   const gradeA = parseInt(document.getElementById('mblp-grade-a').value);
   const gradeB = parseInt(document.getElementById('mblp-grade-b').value);
   const gradeC = parseInt(document.getElementById('mblp-grade-c').value);
   
-  if (!classVal || isNaN(gradeA) || gradeA < 0 || isNaN(gradeB) || gradeB < 0 || isNaN(gradeC) || gradeC < 0) {
+  if (!classVal || !subjectVal || isNaN(gradeA) || gradeA < 0 || isNaN(gradeB) || gradeB < 0 || isNaN(gradeC) || gradeC < 0) {
     showToast('Please fill all required fields correctly', 'warning');
     return;
   }
@@ -2497,6 +2506,7 @@ async function saveMblpGrade(event) {
   const payload = {
     school_id: currentSchool.id,
     class_number: classVal,
+    subject: subjectVal,
     grade_a_count: gradeA,
     grade_b_count: gradeB,
     grade_c_count: gradeC
@@ -2516,9 +2526,9 @@ async function saveMblpGrade(event) {
       if (error) throw error;
       showToast('MBLP Grade entry updated successfully', 'success');
     } else {
-      const duplicate = schoolMblpGradesData.find(x => x.class_number === classVal);
+      const duplicate = schoolMblpGradesData.find(x => x.class_number === classVal && x.subject === subjectVal);
       if (duplicate) {
-        throw new Error(`An entry for Class ${classVal} already exists. Please edit that entry instead.`);
+        throw new Error(`An entry for Class ${classVal} (${subjectVal}) already exists. Please edit that entry instead.`);
       }
 
       const { error } = await supabase
@@ -2537,8 +2547,8 @@ async function saveMblpGrade(event) {
   }
 }
 
-async function deleteMblpGrade(id, classNum) {
-  if (!confirm(`Are you sure you want to delete MBLP Grade entry for Class ${classNum}?`)) return;
+async function deleteMblpGrade(id, classNum, subject) {
+  if (!confirm(`Are you sure you want to delete MBLP Grade entry for Class ${classNum} (${subject})?`)) return;
   
   showLoading();
   try {
