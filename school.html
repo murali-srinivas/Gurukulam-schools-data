@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=7.3">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -40,6 +40,9 @@
       </div>
       <div class="nav-item" onclick="switchTab('marks')" id="nav-marks">
         <i class="fas fa-edit"></i> Enter Marks
+      </div>
+      <div class="nav-item" onclick="switchTab('mblp-grades')" id="nav-mblp-grades">
+        <i class="fas fa-graduation-cap"></i> MBLP Grades
       </div>
       <div class="nav-section-title">Export</div>
       <div class="nav-item" onclick="switchTab('reports')" id="nav-reports">
@@ -343,10 +346,101 @@
         </div>
       </div>
 
+      <!-- TAB: MBLP GRADES -->
+      <div class="tab-pane" id="tab-mblp-grades">
+        <div class="d-flex align-center mb-6 flex-wrap gap-4">
+          <h2 class="section-title" style="margin-bottom: 0; margin-right: 12px;"><i class="fas fa-graduation-cap"></i> MBLP Grades</h2>
+          <button class="btn btn-primary" onclick="openMblpGradesModal()">
+            <i class="fas fa-plus"></i> Add Grade Entry
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="filter-bar" style="margin-bottom: 16px; border-bottom: none; padding-bottom: 0;">
+            <div class="filter-group" style="max-width: 200px;">
+              <label>Filter by Class</label>
+              <select id="mblp-filter-class" class="form-select" onchange="renderMblpGradesTable()">
+                <option value="">All Classes</option>
+                <option value="3">Class 3</option>
+                <option value="4">Class 4</option>
+                <option value="5">Class 5</option>
+                <option value="6">Class 6</option>
+                <option value="7">Class 7</option>
+                <option value="8">Class 8</option>
+                <option value="9">Class 9</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container standalone">
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Class</th>
+                  <th>Grade</th>
+                  <th>No of Students</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="mblp-grades-table-body">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
 
+<!-- MODAL: Add/Edit MBLP Grades -->
+<div class="modal-overlay hidden" id="mblp-grades-modal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="mblp-modal-title">Add MBLP Grade Entry</h3>
+      <button class="modal-close" onclick="closeMblpGradesModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="mblp-grades-form" onsubmit="saveMblpGrade(event)">
+        <input type="hidden" id="mblp-edit-id">
+        <div class="form-group">
+          <label class="form-label">Class</label>
+          <select class="form-select" id="mblp-class" required>
+            <option value="">Select Class</option>
+            <option value="3">Class 3</option>
+            <option value="4">Class 4</option>
+            <option value="5">Class 5</option>
+            <option value="6">Class 6</option>
+            <option value="7">Class 7</option>
+            <option value="8">Class 8</option>
+            <option value="9">Class 9</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grade</label>
+          <select class="form-select" id="mblp-grade" required>
+            <option value="">Select Grade</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">No of Students</label>
+          <input type="number" class="form-input" id="mblp-student-count" placeholder="Enter number of students" required min="0" step="1">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeMblpGradesModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('mblp-grades-form').requestSubmit()">
+        <i class="fas fa-save"></i> Save Entry
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: Bulk Paste Student Names -->
 <div class="modal-overlay hidden" id="bulk-paste-modal">
@@ -786,8 +880,8 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=7.3"></script>
-<script src="js/auth.js?v=7.3"></script>
-<script src="js/school.js?v=7.3"></script>
+<script src="js/supabase-config.js?v=8.0"></script>
+<script src="js/auth.js?v=8.0"></script>
+<script src="js/school.js?v=8.0"></script>
 </body>
 </html>

@@ -57,6 +57,7 @@ function switchTab(tabName) {
     'staffing-particulars': 'Staffing Particulars',
     'outsourcing-attendance': 'Attendance of Out Sourcing Teachers',
     'marks': 'Enter Exam Marks',
+    'mblp-grades': 'MBLP Grades',
     'reports': 'Export Reports'
   };
   document.getElementById('page-title').textContent = titles[tabName] || 'Overview';
@@ -85,6 +86,10 @@ function switchTab(tabName) {
       monthFilter.value = currentMonthStr;
     }
     loadOutsourcingAttendanceTable();
+  } else if (tabName === 'mblp-grades') {
+    const classFilter = document.getElementById('mblp-filter-class');
+    if (classFilter) classFilter.value = '';
+    loadMblpGradesTable();
   } else if (tabName === 'overview') {
     loadOverviewData();
   } else if (tabName === 'marks') {
@@ -2385,6 +2390,166 @@ function deleteOutsourcingAttendance(id, employeeName) {
       hideLoading();
       showToast(err.message, 'error');
     });
+}
+
+let schoolMblpGradesData = [];
+
+async function loadMblpGradesTable() {
+  showLoading();
+  try {
+    const { data, error } = await supabase
+      .from('mblp_grades')
+      .select('*')
+      .eq('school_id', currentSchool.id)
+      .order('class_number', { ascending: true })
+      .order('grade', { ascending: true });
+    
+    if (error) throw error;
+    schoolMblpGradesData = data || [];
+    renderMblpGradesTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderMblpGradesTable() {
+  const tbody = document.getElementById('mblp-grades-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  const filterClass = document.getElementById('mblp-filter-class').value;
+  
+  const filtered = schoolMblpGradesData.filter(item => {
+    return !filterClass || item.class_number === filterClass;
+  });
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
+    return;
+  }
+  
+  filtered.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>Class ${item.class_number}</td>
+      <td>Grade ${item.grade}</td>
+      <td style="font-weight: 600; color: #1e3a8a;">${item.student_count}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-outline" onclick="openMblpGradesModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMblpGrade('${item.id}', '${item.class_number}', '${item.grade}')"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openMblpGradesModal(id = null) {
+  const modal = document.getElementById('mblp-grades-modal');
+  const title = document.getElementById('mblp-modal-title');
+  const form = document.getElementById('mblp-grades-form');
+  
+  form.reset();
+  document.getElementById('mblp-edit-id').value = '';
+  document.getElementById('mblp-class').disabled = false;
+  document.getElementById('mblp-grade').disabled = false;
+  
+  if (id) {
+    title.textContent = 'Edit MBLP Grade Entry';
+    const item = schoolMblpGradesData.find(x => x.id === id);
+    if (item) {
+      document.getElementById('mblp-edit-id').value = item.id;
+      document.getElementById('mblp-class').value = item.class_number;
+      document.getElementById('mblp-grade').value = item.grade;
+      document.getElementById('mblp-student-count').value = item.student_count;
+      
+      document.getElementById('mblp-class').disabled = true;
+      document.getElementById('mblp-grade').disabled = true;
+    }
+  } else {
+    title.textContent = 'Add MBLP Grade Entry';
+  }
+  
+  modal.classList.remove('hidden');
+}
+
+function closeMblpGradesModal() {
+  document.getElementById('mblp-grades-modal').classList.add('hidden');
+}
+
+async function saveMblpGrade(event) {
+  event.preventDefault();
+  
+  const id = document.getElementById('mblp-edit-id').value;
+  const classVal = document.getElementById('mblp-class').value;
+  const gradeVal = document.getElementById('mblp-grade').value;
+  const studentCount = parseInt(document.getElementById('mblp-student-count').value);
+  
+  if (!classVal || !gradeVal || isNaN(studentCount) || studentCount < 0) {
+    showToast('Please fill all required fields correctly', 'warning');
+    return;
+  }
+  
+  const payload = {
+    school_id: currentSchool.id,
+    class_number: classVal,
+    grade: gradeVal,
+    student_count: studentCount
+  };
+  
+  showLoading();
+  try {
+    if (id) {
+      const { error } = await supabase
+        .from('mblp_grades')
+        .update({ student_count: studentCount })
+        .eq('id', id);
+      if (error) throw error;
+      showToast('MBLP Grade entry updated successfully', 'success');
+    } else {
+      const duplicate = schoolMblpGradesData.find(x => x.class_number === classVal && x.grade === gradeVal);
+      if (duplicate) {
+        throw new Error(`An entry for Class ${classVal} and Grade ${gradeVal} already exists. Please edit that entry instead.`);
+      }
+
+      const { error } = await supabase
+        .from('mblp_grades')
+        .insert(payload);
+      if (error) throw error;
+      showToast('MBLP Grade entry added successfully', 'success');
+    }
+    
+    closeMblpGradesModal();
+    loadMblpGradesTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function deleteMblpGrade(id, classNum, grade) {
+  if (!confirm(`Are you sure you want to delete MBLP Grade entry for Class ${classNum} - Grade ${grade}?`)) return;
+  
+  showLoading();
+  try {
+    const { error } = await supabase
+      .from('mblp_grades')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    showToast('MBLP Grade entry deleted successfully', 'success');
+    loadMblpGradesTable();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', initSchool);

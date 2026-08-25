@@ -65,6 +65,7 @@ function switchTab(tabName) {
         'staffing-particulars': 'Staffing Particulars',
         'outsourcing-attendance': 'Attendance of Out Sourcing Teachers',
         'marks': 'Exam Marks',
+        'mblp-grades': 'MBLP Grades',
         'reports': 'Reports & Export'
     };
     document.getElementById('page-title').textContent = titles[tabName] || 'Dashboard';
@@ -105,6 +106,13 @@ function switchTab(tabName) {
             monthFilter.value = currentMonthStr;
         }
         loadAdminOutsourcingAttendanceTable();
+    } else if (tabName === 'mblp-grades') {
+        const filterSchool = document.getElementById('admin-mblp-filter-school');
+        if (filterSchool) filterSchool.value = '';
+        const filterClass = document.getElementById('admin-mblp-filter-class');
+        if (filterClass) filterClass.value = '';
+        populateAdminMblpDropdowns();
+        loadAdminMblpGradesTable();
     } else if (tabName === 'marks') {
         const searchInputMarks = document.getElementById('marks-school-search');
         if (searchInputMarks) {
@@ -3667,6 +3675,226 @@ async function loadAllStaffingSchoolIds() {
         }
     }
     return allStaffing;
+}
+
+let adminMblpGradesData = [];
+
+async function loadAdminMblpGradesTable() {
+    showLoading();
+    try {
+        const filterSchoolId = document.getElementById('admin-mblp-filter-school').value;
+        
+        let query = supabase.from('mblp_grades').select('*');
+        if (filterSchoolId) {
+            query = query.eq('school_id', filterSchoolId);
+        }
+        
+        let allData = [];
+        let offset = 0;
+        const batchSize = 1000;
+        let keepFetching = true;
+        
+        while (keepFetching) {
+            let pagedQuery = query.limit(batchSize).offset(offset);
+            const { data, error } = await pagedQuery.order('class_number', { ascending: true }).order('grade', { ascending: true });
+            if (error) throw error;
+            
+            if (!data || data.length === 0) {
+                keepFetching = false;
+            } else {
+                allData = allData.concat(data);
+                if (data.length < batchSize) {
+                    keepFetching = false;
+                } else {
+                    offset += batchSize;
+                }
+            }
+        }
+        
+        adminMblpGradesData = allData;
+        renderAdminMblpGradesTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderAdminMblpGradesTable() {
+    const tbody = document.getElementById('admin-mblp-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const filterClass = document.getElementById('admin-mblp-filter-class').value;
+    
+    const filtered = adminMblpGradesData.filter(item => {
+        return !filterClass || item.class_number === filterClass;
+    });
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No MBLP Grade entries found.</td></tr>`;
+        return;
+    }
+    
+    filtered.forEach((item, index) => {
+        const school = allSchools.find(s => s.id === item.school_id);
+        const schoolName = school ? school.school_name : 'Unknown';
+        const district = school ? school.district || '-' : '-';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="font-weight: 500; color: #1e3a8a;">${schoolName}</td>
+            <td>${district}</td>
+            <td>Class ${item.class_number}</td>
+            <td>Grade ${item.grade}</td>
+            <td style="font-weight: 600; color: #15803d;">${item.student_count}</td>
+            <td>
+                <div class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openAdminMblpModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminMblpGrade('${item.id}', '${schoolName.replace(/'/g, "\\'")}', '${item.class_number}', '${item.grade}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function populateAdminMblpDropdowns() {
+    const filterSelect = document.getElementById('admin-mblp-filter-school');
+    const formSelect = document.getElementById('admin-mblp-school');
+    if (!filterSelect || !formSelect) return;
+    
+    const filterVal = filterSelect.value;
+    const formVal = formSelect.value;
+    
+    filterSelect.innerHTML = '<option value="">All Schools</option>';
+    formSelect.innerHTML = '<option value="">Select School</option>';
+    
+    const sortedSchools = [...allSchools].sort((a, b) => a.school_name.localeCompare(b.school_name));
+    
+    sortedSchools.forEach(school => {
+        const optFilter = document.createElement('option');
+        optFilter.value = school.id;
+        optFilter.textContent = `${school.school_name} (${school.district || '-'})`;
+        filterSelect.appendChild(optFilter);
+        
+        const optForm = document.createElement('option');
+        optForm.value = school.id;
+        optForm.textContent = `${school.school_name} (${school.district || '-'})`;
+        formSelect.appendChild(optForm);
+    });
+    
+    filterSelect.value = filterVal;
+    formSelect.value = formVal;
+}
+
+function openAdminMblpModal(id = null) {
+    const modal = document.getElementById('admin-mblp-modal');
+    const title = document.getElementById('admin-mblp-modal-title');
+    const form = document.getElementById('admin-mblp-form');
+    
+    form.reset();
+    document.getElementById('admin-mblp-edit-id').value = '';
+    document.getElementById('admin-mblp-school').disabled = false;
+    document.getElementById('admin-mblp-class').disabled = false;
+    document.getElementById('admin-mblp-grade').disabled = false;
+    
+    if (id) {
+        title.textContent = 'Edit MBLP Grade Entry';
+        const item = adminMblpGradesData.find(x => x.id === id);
+        if (item) {
+            document.getElementById('admin-mblp-edit-id').value = item.id;
+            document.getElementById('admin-mblp-school').value = item.school_id;
+            document.getElementById('admin-mblp-class').value = item.class_number;
+            document.getElementById('admin-mblp-grade').value = item.grade;
+            document.getElementById('admin-mblp-student-count').value = item.student_count;
+            
+            document.getElementById('admin-mblp-school').disabled = true;
+            document.getElementById('admin-mblp-class').disabled = true;
+            document.getElementById('admin-mblp-grade').disabled = true;
+        }
+    } else {
+        title.textContent = 'Add MBLP Grade Entry';
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeAdminMblpModal() {
+    document.getElementById('admin-mblp-modal').classList.add('hidden');
+}
+
+async function saveAdminMblpGrade(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('admin-mblp-edit-id').value;
+    const schoolId = document.getElementById('admin-mblp-school').value;
+    const classVal = document.getElementById('admin-mblp-class').value;
+    const gradeVal = document.getElementById('admin-mblp-grade').value;
+    const studentCount = parseInt(document.getElementById('admin-mblp-student-count').value);
+    
+    if (!schoolId || !classVal || !gradeVal || isNaN(studentCount) || studentCount < 0) {
+        showToast('Please fill all required fields correctly', 'warning');
+        return;
+    }
+    
+    const payload = {
+        school_id: schoolId,
+        class_number: classVal,
+        grade: gradeVal,
+        student_count: studentCount
+    };
+    
+    showLoading();
+    try {
+        if (id) {
+            const { error } = await supabase
+                .from('mblp_grades')
+                .update({ student_count: studentCount })
+                .eq('id', id);
+            if (error) throw error;
+            showToast('MBLP Grade entry updated successfully', 'success');
+        } else {
+            const duplicate = adminMblpGradesData.find(x => x.school_id === schoolId && x.class_number === classVal && x.grade === gradeVal);
+            if (duplicate) {
+                throw new Error(`An entry for this school, Class ${classVal} and Grade ${gradeVal} already exists. Please edit that entry instead.`);
+            }
+
+            const { error } = await supabase
+                .from('mblp_grades')
+                .insert(payload);
+            if (error) throw error;
+            showToast('MBLP Grade entry added successfully', 'success');
+        }
+        
+        closeAdminMblpModal();
+        loadAdminMblpGradesTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteAdminMblpGrade(id, schoolName, classNum, grade) {
+    if (!confirm(`Are you sure you want to delete MBLP Grade entry for ${schoolName} (Class ${classNum} - Grade ${grade})?`)) return;
+    
+    showLoading();
+    try {
+        const { error } = await supabase
+            .from('mblp_grades')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        showToast('MBLP Grade entry deleted successfully', 'success');
+        loadAdminMblpGradesTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);
