@@ -2628,13 +2628,42 @@ async function generateReport() {
                 }
             }
             
+            const allMblp = await loadAllMblpGradesSchoolIds();
+            const schoolsWithEntries = new Set(allMblp.map(item => item.school_id));
+            const pendingSchools = allSchools.filter(school => {
+                if (schoolId && school.id !== schoolId) return false;
+                return !schoolsWithEntries.has(school.id);
+            });
+
+            let html = `
+                <div class="card mb-4" style="border-left: 4px solid #ef4444; background-color: #fff;">
+                    <div class="card-body" style="padding: 16px;">
+                        <h4 style="color: #b91c1c; margin: 0 0 8px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-circle"></i> Schools with Zero MBLP Grades Submissions (${pendingSchools.length})
+                        </h4>
+                        ${pendingSchools.length > 0 ? `
+                            <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: #4b5563;">The following schools have not submitted any MBLP grades entries yet:</p>
+                            <div style="max-height: 200px; overflow-y: auto; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px;">
+                                <ul style="margin: 0; padding: 0 0 0 16px; font-size: 0.9rem; line-height: 1.5; color: #1f2937;">
+                                    ${pendingSchools.map(ps => `<li><strong>${ps.school_name}</strong> (${ps.district || 'No District'})</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : `
+                            <p style="margin: 0; font-size: 0.9rem; color: #047857; font-weight: 500;">
+                                <i class="fas fa-check-circle"></i> Excellent! All schools in the selected criteria have submitted at least one MBLP grades entry.
+                            </p>
+                        `}
+                    </div>
+                </div>
+            `;
+
             if (list.length === 0) {
-                previewContainer.innerHTML = '<div class="text-center p-4">No MBLP Grade records found.</div>';
+                previewContainer.innerHTML = html + '<div class="text-center p-4">No MBLP Grade records found.</div>';
                 hideLoading();
                 return;
             }
             
-            let html = `
+            html += `
                 <div class="table-container mt-4">
                     <table>
                         <thead>
@@ -3903,6 +3932,31 @@ async function loadAllStaffingSchoolIds() {
         }
     }
     return allStaffing;
+}
+
+async function loadAllMblpGradesSchoolIds() {
+    let allMblp = [];
+    let offset = 0;
+    const batchSize = 1000;
+    let keepFetching = true;
+    while (keepFetching) {
+        const { data: batch, error: err } = await supabase.from('mblp_grades')
+            .select('school_id')
+            .limit(batchSize)
+            .offset(offset);
+        if (err) throw err;
+        if (!batch || batch.length === 0) {
+            keepFetching = false;
+        } else {
+            allMblp = allMblp.concat(batch);
+            if (batch.length < batchSize) {
+                keepFetching = false;
+            } else {
+                offset += batchSize;
+            }
+        }
+    }
+    return allMblp;
 }
 
 let adminMblpGradesData = [];
