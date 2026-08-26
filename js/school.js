@@ -2567,4 +2567,58 @@ async function deleteMblpGrade(id, classNum, subject) {
   }
 }
 
+function openChangePasswordModal() {
+  const modal = document.getElementById('change-password-modal');
+  const form = document.getElementById('change-password-form');
+  if (form) form.reset();
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeChangePasswordModal() {
+  const modal = document.getElementById('change-password-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveNewPassword(event) {
+  event.preventDefault();
+  
+  const newPassword = document.getElementById('new-password-input').value;
+  const confirmPassword = document.getElementById('confirm-password-input').value;
+  
+  if (!newPassword || !confirmPassword) {
+    showToast('Please fill all password fields', 'warning');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showToast('New passwords do not match!', 'warning');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showToast('Password must be at least 6 characters long', 'warning');
+    return;
+  }
+  
+  showLoading();
+  try {
+    const { error } = await supabase
+      .from('schools')
+      .update({ password: newPassword })
+      .eq('id', currentSchool.id);
+      
+    if (error) throw error;
+    
+    currentSchool.password = newPassword;
+    sessionStorage.setItem('portal_session', JSON.stringify(currentSchool));
+    
+    showToast('Password updated successfully', 'success');
+    closeChangePasswordModal();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', initSchool);
