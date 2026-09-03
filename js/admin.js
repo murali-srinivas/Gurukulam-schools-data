@@ -1,6 +1,6 @@
 let allSchools = [];
 const STAFFING_POSTS = [
-    "Principals(C)", "Principals(S)", "JL-Telugu", "JL-Hindi", "JL-English", "JL-Maths",
+    "Principals(C)", "Principals(S)", "JL-Telugu", "JL-Hindi", "JL in Sanskrit", "JL-English", "JL-Maths",
     "JL-Physics", "JL-Chemistry", "JL-Botany", "JL-Zoology", "JL-History", "JL-Commerce",
     "JL-Civics", "JL-Economics", "JL-Vocational", "PD-College", "PGT-Telugu", "PGT-Hindi",
     "PGT-English", "PGT-Maths", "PGT-PS", "PGT-NS", "PGT-SS", "PD-School", "TGT-Telugu",

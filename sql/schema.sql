@@ -320,13 +320,11 @@ ON CONFLICT (username) DO NOTHING;
 -- CREATE POLICY "Allow all on mblp_grades" ON mblp_grades
 --     FOR ALL USING (true) WITH CHECK (true);
 
-
-
-
-
-
-
-
-
-
-
+-- ============================================
+-- MIGRATION: Staffing Particulars - Post "JL in Sanskrit"
+-- Note: 'post_name' in staffing_particulars is TEXT NOT NULL,
+-- allowing 'JL in Sanskrit' seamlessly without table structure modifications.
+-- If you need to verify or update historical records in Supabase SQL editor:
+-- SELECT DISTINCT post_name FROM staffing_particulars ORDER BY post_name;
+-- UPDATE staffing_particulars SET post_name = 'JL in Sanskrit' WHERE post_name = 'JL-Sanskrit';
+-- ============================================
