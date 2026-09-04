@@ -3256,6 +3256,7 @@ function renderAdminStaffingTable() {
             <td>
                 <div class="btn-group">
                     <button class="btn btn-sm btn-outline" onclick="openAdminStaffingModal('${item.id}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-warning" onclick="openAdminTransferStaffingModal('${item.id}')" title="Transfer this staff particulars record to another school"><i class="fas fa-exchange-alt"></i> Transfer</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteAdminStaffing('${item.id}', '${item.post_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash"></i> Delete</button>
                 </div>
             </td>
@@ -3419,6 +3420,248 @@ function deleteAdminStaffing(id, postName) {
             showToast(err.message, 'error');
         });
 }
+
+// ============================================
+// ADMIN STAFFING PARTICULARS TRANSFER
+// ============================================
+let verifiedAdminTargetSchool = null;
+
+function openAdminTransferStaffingModal(id = null) {
+    const modal = document.getElementById('admin-transfer-staffing-modal');
+    const form = document.getElementById('admin-transfer-staffing-form');
+    const select = document.getElementById('admin-transfer-staffing-select');
+    const feedback = document.getElementById('admin-transfer-target-feedback');
+    
+    if (form) form.reset();
+    if (feedback) feedback.innerHTML = '';
+    verifiedAdminTargetSchool = null;
+    
+    if (!adminStaffingData || adminStaffingData.length === 0) {
+        showToast('No staffing particulars available to transfer.', 'warning');
+        return;
+    }
+    
+    if (select) {
+        select.innerHTML = '';
+        adminStaffingData.forEach(item => {
+            const sc = allSchools.find(s => s.id === item.school_id);
+            const scName = sc ? sc.school_name : 'Unknown School';
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            const empLabel = item.employee_name 
+                ? `${item.employee_name} (${item.post_name} - ${item.status}) - ${scName}` 
+                : `${item.post_name} (${item.status}) - ${scName}`;
+            opt.textContent = empLabel;
+            if (id && item.id === id) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+    
+    if (id && select) {
+        select.value = id;
+    }
+    
+    onAdminTransferStaffingSelectChange();
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeAdminTransferStaffingModal() {
+    const modal = document.getElementById('admin-transfer-staffing-modal');
+    if (modal) modal.classList.add('hidden');
+    verifiedAdminTargetSchool = null;
+}
+
+function onAdminTransferStaffingSelectChange() {
+    const select = document.getElementById('admin-transfer-staffing-select');
+    if (!select) return;
+    const id = select.value;
+    const item = adminStaffingData.find(x => x.id === id);
+    
+    const empSpan = document.getElementById('admin-transfer-preview-employee');
+    const postSpan = document.getElementById('admin-transfer-preview-post');
+    const statusSpan = document.getElementById('admin-transfer-preview-status');
+    const schoolSpan = document.getElementById('admin-transfer-preview-school');
+    
+    if (item) {
+        const sc = allSchools.find(s => s.id === item.school_id);
+        const scName = sc ? `${sc.school_name} (${sc.username || ''})` : 'Unknown School';
+        if (empSpan) empSpan.textContent = item.employee_name || 'No employee assigned';
+        if (postSpan) postSpan.textContent = item.post_name;
+        if (statusSpan) {
+            statusSpan.textContent = `${item.status}${item.employment_type ? ' (' + item.employment_type + ')' : ''}`;
+        }
+        if (schoolSpan) schoolSpan.textContent = scName;
+    }
+}
+
+function onAdminTargetSchoolUsernameInput() {
+    verifiedAdminTargetSchool = null;
+    const feedback = document.getElementById('admin-transfer-target-feedback');
+    if (feedback) feedback.innerHTML = '';
+}
+
+async function verifyAdminTransferTargetSchool() {
+    const input = document.getElementById('admin-transfer-target-username');
+    const feedback = document.getElementById('admin-transfer-target-feedback');
+    if (!input) return null;
+    
+    const targetUsername = input.value.trim();
+    if (!targetUsername) {
+        if (feedback) {
+            feedback.innerHTML = `<span style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Please enter the destination school user ID.</span>`;
+        }
+        return null;
+    }
+    
+    // Check locally first from allSchools
+    let target = allSchools.find(s => s.username && s.username.toLowerCase() === targetUsername.toLowerCase());
+    
+    if (!target) {
+        if (feedback) {
+            feedback.innerHTML = `<span style="color: #3b82f6;"><i class="fas fa-spinner fa-spin"></i> Checking school user ID...</span>`;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('schools')
+                .select('id, school_name, username, district')
+                .eq('username', targetUsername)
+                .maybeSingle();
+            if (error) throw error;
+            target = data;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    
+    if (!target) {
+        verifiedAdminTargetSchool = null;
+        if (feedback) {
+            feedback.innerHTML = `<span style="color: #ef4444;"><i class="fas fa-times-circle"></i> School not found with User ID "<strong>${targetUsername}</strong>". Please verify the User ID.</span>`;
+        }
+        return null;
+    }
+    
+    const select = document.getElementById('admin-transfer-staffing-select');
+    const id = select ? select.value : null;
+    const item = adminStaffingData.find(x => x.id === id);
+    if (item && item.school_id === target.id) {
+        verifiedAdminTargetSchool = null;
+        if (feedback) {
+            feedback.innerHTML = `<span style="color: #f59e0b;"><i class="fas fa-exclamation-triangle"></i> Destination school cannot be the same as the source school.</span>`;
+        }
+        return null;
+    }
+    
+    verifiedAdminTargetSchool = target;
+    if (feedback) {
+        feedback.innerHTML = `<span style="color: #10b981; font-weight: 500;"><i class="fas fa-check-circle"></i> Verified: <strong>${target.school_name}</strong> (${target.district || 'No District'})</span>`;
+    }
+    return target;
+}
+
+async function executeAdminStaffingTransfer(event) {
+    event.preventDefault();
+    
+    const select = document.getElementById('admin-transfer-staffing-select');
+    if (!select || !select.value) {
+        showToast('Please select a staffing record to transfer', 'warning');
+        return;
+    }
+    
+    const staffingId = select.value;
+    const item = adminStaffingData.find(x => x.id === staffingId);
+    if (!item) {
+        showToast('Staffing record not found', 'error');
+        return;
+    }
+    
+    let target = verifiedAdminTargetSchool;
+    if (!target) {
+        target = await verifyAdminTransferTargetSchool();
+    }
+    if (!target) {
+        showToast('Please enter and verify a valid destination school User ID', 'warning');
+        return;
+    }
+    
+    const sc = allSchools.find(s => s.id === item.school_id);
+    const sourceScName = sc ? sc.school_name : 'source school';
+    const sourceScUser = sc ? sc.username : '';
+    
+    const empDesc = item.employee_name ? `"${item.employee_name}" (${item.post_name})` : `"${item.post_name}"`;
+    const confirmMsg = `Are you sure you want to transfer ${empDesc} from:\n${sourceScName}\nto:\n${target.school_name} (${target.username})?`;
+    if (!confirm(confirmMsg)) return;
+    
+    const leaveVacant = document.getElementById('admin-transfer-leave-vacant') ? document.getElementById('admin-transfer-leave-vacant').checked : true;
+    const moveProfile = document.getElementById('admin-transfer-move-profile') ? document.getElementById('admin-transfer-move-profile').checked : true;
+    
+    showLoading();
+    try {
+        // 1. If leaveVacant is checked, create a vacant placeholder in the source school
+        if (leaveVacant) {
+            const vacantPayload = {
+                school_id: item.school_id,
+                post_name: item.post_name,
+                status: 'Vacant',
+                employee_name: null,
+                employment_type: null,
+                joining_date: null,
+                aadhar_no: null,
+                apcos_id: null,
+                remarks: `Vacant (Transferred to ${target.school_name} - ${target.username})`
+            };
+            
+            const { error: vacantErr } = await supabase
+                .from('staffing_particulars')
+                .insert(vacantPayload);
+                
+            if (vacantErr) {
+                console.warn('Note: Could not insert vacant position:', vacantErr.message);
+            }
+        }
+        
+        // 2. Transfer the staffing_particulars record to destination school
+        const updatedRemarks = item.remarks 
+            ? `${item.remarks} [Transferred from ${sourceScName} (${sourceScUser})]` 
+            : `Transferred from ${sourceScName} (${sourceScUser})`;
+            
+        const { error: transferErr } = await supabase
+            .from('staffing_particulars')
+            .update({
+                school_id: target.id,
+                remarks: updatedRemarks
+            })
+            .eq('id', item.id);
+            
+        if (transferErr) throw transferErr;
+        
+        // 3. If moveProfile is checked and employee has a name, also transfer staff profile from staff table
+        if (moveProfile && item.employee_name) {
+            try {
+                const { error: staffErr } = await supabase
+                    .from('staff')
+                    .update({ school_id: target.id })
+                    .eq('school_id', item.school_id)
+                    .ilike('staff_name', item.employee_name.trim());
+                    
+                if (staffErr) {
+                    console.warn('Note: Could not transfer matching staff profile:', staffErr.message);
+                }
+            } catch (profileErr) {
+                console.warn('Note on staff profile transfer:', profileErr);
+            }
+        }
+        
+        showToast(`Staff particulars successfully transferred to ${target.school_name}!`, 'success');
+        closeAdminTransferStaffingModal();
+        loadAdminStaffingTable();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 
 function filterSchoolDropdownForStaffing() {
     const searchVal = document.getElementById('staffing-school-search').value.toLowerCase();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Dashboard - School Data Portal</title>
-  <link rel="stylesheet" href="css/styles.css?v=8.5">
+  <link rel="stylesheet" href="css/styles.css?v=8.6">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
@@ -263,6 +263,9 @@
           <h2 class="section-title" style="margin-bottom: 0; margin-right: 12px;"><i class="fas fa-clipboard-list"></i> Staffing Particulars</h2>
           <button class="btn btn-primary" onclick="openStaffingModal()">
             <i class="fas fa-plus"></i> Add Staffing Position
+          </button>
+          <button class="btn btn-warning" onclick="openTransferStaffingModal()">
+            <i class="fas fa-exchange-alt"></i> Transfer Staff Particulars
           </button>
         </div>
         <div class="card">
@@ -925,14 +928,76 @@
   </div>
 </div>
 
+<!-- MODAL: Transfer Staff Particulars -->
+<div class="modal-overlay hidden" id="transfer-staffing-modal">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal-header">
+      <h3 style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-exchange-alt text-warning"></i> Transfer Staff Particulars
+      </h3>
+      <button class="modal-close" onclick="closeTransferStaffingModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="transfer-staffing-form" onsubmit="executeStaffingTransfer(event)">
+        <div class="form-group" id="transfer-select-group">
+          <label class="form-label">Select Staff Particulars to Transfer <span class="text-danger">*</span></label>
+          <select class="form-select" id="transfer-staffing-select" required onchange="onTransferStaffingSelectChange()">
+            <!-- Options populated dynamically -->
+          </select>
+        </div>
+
+        <div class="card p-3 mb-3" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-size: 0.9rem; line-height: 1.6;">
+            <div><strong>Employee:</strong> <span id="transfer-preview-employee">-</span></div>
+            <div><strong>Post:</strong> <span id="transfer-preview-post">-</span></div>
+            <div><strong>Status:</strong> <span id="transfer-preview-status">-</span></div>
+            <div><strong>Current School:</strong> <span id="transfer-preview-school">-</span></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Destination School User ID (Username) <span class="text-danger">*</span></label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" class="form-input" id="transfer-target-username" placeholder="Enter target school user ID (e.g. username)" required style="flex-grow: 1;" oninput="onTargetSchoolUsernameInput()">
+            <button type="button" class="btn btn-outline" onclick="verifyTransferTargetSchool()" id="btn-verify-school">
+              <i class="fas fa-search"></i> Verify
+            </button>
+          </div>
+          <div id="transfer-target-feedback" style="margin-top: 6px; font-size: 0.85rem;"></div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; font-size: 0.9rem;">
+            <input type="checkbox" id="transfer-leave-vacant" checked>
+            <span>Leave a <strong>Vacant</strong> position for this post in current school</span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 4px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; font-size: 0.9rem;">
+            <input type="checkbox" id="transfer-move-profile" checked>
+            <span>Also transfer matching <strong>Staff Profile</strong> (if exists)</span>
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeTransferStaffingModal()">Cancel</button>
+      <button class="btn btn-warning" id="btn-confirm-transfer" onclick="document.getElementById('transfer-staffing-form').requestSubmit()">
+        <i class="fas fa-exchange-alt"></i> Transfer Staff
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-<script src="js/supabase-config.js?v=8.5"></script>
-<script src="js/auth.js?v=8.5"></script>
-<script src="js/school.js?v=8.5"></script>
+<script src="js/supabase-config.js?v=8.6"></script>
+<script src="js/auth.js?v=8.6"></script>
+<script src="js/school.js?v=8.6"></script>
 </body>
 </html>
